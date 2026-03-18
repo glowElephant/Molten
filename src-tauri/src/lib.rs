@@ -1,3 +1,4 @@
+mod capture;
 mod commands;
 mod pty;
 
@@ -19,6 +20,7 @@ pub fn run() {
             commands::pty_kill,
             commands::pty_has_session,
             commands::pty_session_count,
+            capture::capture_window,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

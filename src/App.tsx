@@ -10,6 +10,7 @@ import { useSettingsStore } from './stores/settingsStore';
 import { useSessionStore } from './stores/sessionStore';
 import { useNotificationStore } from './stores/notificationStore';
 import { useSessionNotifications } from './hooks/useSessionNotifications';
+import './utils/selfCapture'; // Register global capture function
 import './App.css';
 
 function App() {
