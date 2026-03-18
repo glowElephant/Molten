@@ -21,7 +21,7 @@
 <p align="center">
   <img src="docs/screenshot.png" alt="Molten Screenshot" width="100%" />
   <br/>
-  <em>Claude Code 멀티 에이전트 팀이 Molten 안에서 병렬 작업 중 — 팀 리드 + alpha/bravo 에이전트</em>
+  <em>Claude Code multi-agent team working in parallel inside Molten — team lead + alpha/bravo agents</em>
 </p>
 
 ---
