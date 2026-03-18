@@ -1,0 +1,110 @@
+/* Override rc-dock-dark theme to match Molten's Obsidian theme */
+
+.dock-layout {
+  --color-bg: #0a0a0f;
+  --color-panel: #0f0f1a;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-accent: #7c3aed;
+}
+
+/* Panel background */
+.dock-layout .dock-panel {
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Tab bar */
+.dock-layout .dock-bar {
+  background: rgba(15, 15, 25, 0.95);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Individual tab */
+.dock-layout .dock-tab {
+  background: transparent;
+  color: var(--color-text-muted, #475569);
+  border: none;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-family: var(--font-ui, 'Inter', sans-serif);
+  transition: color 0.15s ease;
+}
+
+.dock-layout .dock-tab:hover {
+  color: var(--color-text-secondary, #94a3b8);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Active tab */
+.dock-layout .dock-tab-active,
+.dock-layout .dock-tab-active:hover {
+  color: var(--color-text-primary, #e2e8f0);
+  background: rgba(124, 58, 237, 0.1);
+  border-bottom: 2px solid var(--color-accent);
+}
+
+/* Tab close button */
+.dock-layout .dock-tab-close-btn {
+  color: var(--color-text-muted, #475569);
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.dock-layout .dock-tab:hover .dock-tab-close-btn {
+  opacity: 1;
+}
+
+.dock-layout .dock-tab-close-btn:hover {
+  color: #ef4444;
+}
+
+/* Panel content area */
+.dock-layout .dock-panel .dock-content-holder {
+  background: var(--color-bg);
+}
+
+/* Divider between panels */
+.dock-layout .dock-divider {
+  background: var(--color-border);
+  flex-basis: 2px;
+}
+
+.dock-layout .dock-divider:hover {
+  background: var(--color-accent);
+}
+
+/* Drop indicator */
+.dock-layout .dock-drop-indicator {
+  background: rgba(124, 58, 237, 0.2);
+  border: 2px solid var(--color-accent);
+  border-radius: 4px;
+}
+
+/* Float panel */
+.dock-layout .dock-panel.dock-style-float {
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Maximize button */
+.dock-layout .dock-panel-max-btn {
+  color: var(--color-text-muted, #475569);
+}
+
+.dock-layout .dock-panel-max-btn:hover {
+  color: var(--color-text-primary, #e2e8f0);
+}
+
+/* Scrollbar in dock */
+.dock-layout .dock-content-holder::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dock-layout .dock-content-holder::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}

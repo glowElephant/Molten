@@ -208,38 +208,35 @@
 /* Sidebar toggle button (when sidebar is hidden) */
 
 .sidebar-toggle {
-  position: fixed;
   z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 40px;
+  width: 24px;
+  height: 60px;
   border: none;
-  background: rgba(15, 15, 25, 0.9);
-  color: var(--color-text-muted, #475569);
+  background: rgba(20, 20, 35, 0.95);
+  color: var(--color-accent, #7c3aed);
   cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.sidebar-toggle--left {
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  border-radius: 0 6px 6px 0;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.sidebar-toggle--left {
+  border-radius: 0;
+  align-self: center;
+}
+
 .sidebar-toggle--right {
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  border-radius: 6px 0 0 6px;
+  border-radius: 0;
+  border-right: none;
   border-left: 1px solid rgba(255, 255, 255, 0.08);
+  align-self: center;
 }
 
 .sidebar-toggle:hover {
   color: var(--color-text-primary, #e2e8f0);
-  background: rgba(25, 25, 40, 0.95);
-  width: 24px;
+  background: rgba(124, 58, 237, 0.15);
+  width: 28px;
 }

@@ -15,13 +15,10 @@ function App() {
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+N: New session
       if (e.ctrlKey && e.key === 'n') {
         e.preventDefault();
         createSession();
       }
-
-      // Ctrl+B: Toggle sidebar
       if (e.ctrlKey && e.key === 'b') {
         e.preventDefault();
         useSettingsStore.getState().updateNestedSetting(
@@ -31,8 +28,6 @@ function App() {
         );
       }
     };
-
-    // Use capture phase to intercept before xterm.js gets the event
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [createSession]);
@@ -46,11 +41,9 @@ function App() {
 
       <div className="app__body">
         {titleBar.position === 'left' && <TitleBar position="left" />}
-
         {sidebar.position === 'left' && <Sidebar />}
 
         <main className="app__content">
-          {/* Render ALL sessions, hide inactive ones with CSS */}
           {sessionList.map((session) => (
             <div
               key={session.id}
@@ -65,7 +58,6 @@ function App() {
             </div>
           ))}
 
-          {/* Show placeholder only when no sessions exist */}
           {!hasAnySessions && (
             <div className="app__placeholder">
               <div className="app__placeholder-logo">◆</div>
@@ -86,7 +78,6 @@ function App() {
 
       {sidebar.position === 'bottom' && <Sidebar />}
       {titleBar.position === 'bottom' && <TitleBar position="bottom" />}
-
       <StatusBar />
     </div>
   );

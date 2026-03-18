@@ -81,6 +81,7 @@ body {
   display: flex;
   flex-direction: column;
   background: var(--color-bg);
+  position: relative;
 }
 
 /* Placeholder (shown when no sessions) */
