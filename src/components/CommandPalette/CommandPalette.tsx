@@ -2,13 +2,14 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Plus, Settings, Bell, Sidebar,
   X as XIcon, Layout,
-  Terminal, Search
+  Terminal, Search, ArrowRight, Radio
 } from 'lucide-react';
 import { useSessionStore } from '../../stores/sessionStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { useLayoutStore } from '../../stores/layoutStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
+import { useMessageBusStore } from '../../stores/messageBusStore';
 import type { LayoutNode } from '../../stores/layoutStore';
 import './CommandPalette.css';
 
@@ -32,7 +33,7 @@ export function CommandPalette({ visible, onClose, onOpenSettings }: CommandPale
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const { sessions, createSession, setActiveSession, closeSession } = useSessionStore();
+  const { sessions, activeSessionId, createSession, setActiveSession, closeSession } = useSessionStore();
   const { settings } = useSettingsStore();
   const { togglePanel: toggleNotifications } = useNotificationStore();
 
@@ -209,9 +210,58 @@ export function CommandPalette({ visible, onClose, onOpenSettings }: CommandPale
         },
         category: 'Workspace',
       })),
+      // Pipe commands — send data between sessions
+      ...Array.from(sessions.values())
+        .filter((s) => s.id !== activeSessionId)
+        .map((target) => ({
+          id: `pipe-last-to-${target.id}`,
+          label: `Pipe: Send last output → ${target.name}`,
+          icon: <ArrowRight size={14} />,
+          action: () => {
+            if (!activeSessionId) return;
+            const content = useMessageBusStore.getState().getLastOutput(activeSessionId);
+            if (content) {
+              useMessageBusStore.getState().sendToSession(activeSessionId, target.id, content);
+            }
+            onClose();
+          },
+          category: 'Pipe',
+        })),
+      ...Array.from(sessions.values())
+        .filter((s) => s.id !== activeSessionId)
+        .map((target) => ({
+          id: `pipe-text-to-${target.id}`,
+          label: `Pipe: Send text → ${target.name}`,
+          icon: <ArrowRight size={14} />,
+          action: () => {
+            onClose();
+            setTimeout(() => {
+              const text = window.prompt(`Send to ${target.name}:`);
+              if (text && activeSessionId) {
+                useMessageBusStore.getState().sendToSession(activeSessionId, target.id, text + '\n');
+              }
+            }, 50);
+          },
+          category: 'Pipe',
+        })),
+      ...(sessions.size > 1 ? [{
+        id: 'broadcast-all',
+        label: 'Pipe: Broadcast to all sessions',
+        icon: <Radio size={14} />,
+        action: () => {
+          onClose();
+          setTimeout(() => {
+            const text = window.prompt('Broadcast to all sessions:');
+            if (text && activeSessionId) {
+              useMessageBusStore.getState().broadcast(activeSessionId, text + '\n');
+            }
+          }, 50);
+        },
+        category: 'Pipe',
+      }] : []),
     ];
     return cmds;
-  }, [sessions, settings, createSession, setActiveSession, closeSession, toggleNotifications, onClose, onOpenSettings]);
+  }, [sessions, activeSessionId, settings, createSession, setActiveSession, closeSession, toggleNotifications, onClose, onOpenSettings]);
 
   // Filter commands by query
   const filteredCommands = useMemo(() => {

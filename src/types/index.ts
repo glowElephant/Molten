@@ -103,6 +103,15 @@ export interface TitleBarConfig {
   position: 'top' | 'bottom' | 'left' | 'right' | 'hidden';
 }
 
+// Inter-session message types
+export interface InterSessionMessage {
+  id: string;
+  fromSessionId: string;
+  toSessionId: string | 'broadcast';
+  content: string;
+  timestamp: string;
+}
+
 // Trigger types
 export interface Trigger {
   id: string;
@@ -159,4 +168,6 @@ export type MoltenEventMap = {
   'workspace:loaded': { name: string };
   'theme:changed': { theme: string };
   'trigger:matched': { triggerId: string; sessionId: string; matchText: string };
+  'session:pipe-in': { toSessionId: string; content: string };
+  'session:broadcast': { content: string; fromSessionId: string };
 };

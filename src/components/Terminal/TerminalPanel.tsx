@@ -7,6 +7,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useSessionStore } from '../../stores/sessionStore';
+import { useMessageBusStore } from '../../stores/messageBusStore';
 import { detectStatus } from '../../utils/statusDetector';
 import { eventBus } from '../../utils/eventBus';
 import '@xterm/xterm/css/xterm.css';
@@ -146,6 +147,19 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
       }
 
       eventBus.emit('session:output', { sessionId, data: text });
+      useMessageBusStore.getState().recordOutput(sessionId, text);
+    });
+
+    // Subscribe: receive piped input from another session
+    const unsubPipe = eventBus.on('session:pipe-in', ({ toSessionId, content }) => {
+      if (toSessionId !== sessionId) return;
+      invoke('pty_write', { sessionId, data: content }).catch(console.error);
+    });
+
+    // Subscribe: receive broadcast
+    const unsubBroadcast = eventBus.on('session:broadcast', ({ content, fromSessionId }) => {
+      if (fromSessionId === sessionId) return; // skip self
+      invoke('pty_write', { sessionId, data: content }).catch(console.error);
     });
 
     // Listen for PTY exit
@@ -186,6 +200,8 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
       resizeObserver.disconnect();
       unlistenOutput.then((fn) => fn());
       unlistenExit.then((fn) => fn());
+      unsubPipe();
+      unsubBroadcast();
       terminal.dispose();
       terminalRef.current = null;
       fitAddonRef.current = null;
