@@ -139,7 +139,7 @@ function App() {
   const standaloneSessions = sessionList.filter((s) => !splitSessionIds.has(s.id));
 
   return (
-    <div className="app" data-theme={settings.theme}>
+    <div className="app" data-theme={settings.theme} data-animations={settings.animations.enabled ? 'on' : 'off'}>
       {titleBar.position === 'top' && <TitleBar position="top" />}
 
       <div className="app__body">
@@ -214,6 +214,19 @@ function App() {
         visible={guideVisible}
         onClose={() => setGuideVisible(false)}
       />
+
+      {/* Gooey SVG filter for liquid merge/tear effects */}
+      <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+        <defs>
+          <filter id="gooey">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+            <feColorMatrix in="blur" type="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9"
+              result="gooey" />
+            <feComposite in="SourceGraphic" in2="gooey" operator="atop" />
+          </filter>
+        </defs>
+      </svg>
     </div>
   );
 }
