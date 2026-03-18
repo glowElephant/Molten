@@ -134,6 +134,26 @@ claude --dangerously-skip-permissions
 
 ---
 
+## AI-Driven Self-Development
+
+Molten is designed to be **developed by AI agents running inside Molten itself**. The infrastructure supports a capture→analyze→fix loop:
+
+1. **Self-capture** — `captureSelf()` takes a screenshot of the Molten window (saved to `%TEMP%/molten-capture.png`), auto-triggered every 10s and after every UI action
+2. **Programmatic control** — `window.__moltenExec(action)` exposes all UI actions as callable functions (session create/close/split/switch/type)
+3. **API server** — all features controllable via HTTP (`http://127.0.0.1:9900`)
+4. **Claude Code inside Molten** — an agent running in a Molten session can read the screenshot, identify visual bugs, edit source code, and restart the app
+
+This means Claude Code can:
+- Take a screenshot of Molten's current state
+- Analyze rendering issues, broken layouts, or garbled text
+- Fix the code directly
+- Restart the app (`taskkill` + `pnpm tauri dev`)
+- Verify the fix via another screenshot
+
+Molten was largely built this way — Claude Code running inside Molten, fixing Molten.
+
+---
+
 ## Keyboard Shortcuts
 
 | Shortcut | Action |
