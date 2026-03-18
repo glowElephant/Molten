@@ -136,13 +136,13 @@ claude --dangerously-skip-permissions
 
 ## AI-Assisted Development
 
-Molten has built-in infrastructure that enables AI agents to **observe and control the app programmatically**:
+Molten was built by Claude Code running inside Molten. Screenshots were captured, analyzed for visual bugs, code was fixed, and the app was restarted — all from within a Molten session. This dogfooding workflow is possible thanks to built-in infrastructure:
 
 - **Self-capture** — `captureSelf()` takes a screenshot of the Molten window (saved to `%TEMP%/molten-capture.png`), auto-triggered every 10s and after every UI action
 - **Programmatic control** — `window.__moltenExec(action)` exposes all UI actions as callable functions (session create/close/split/switch/type)
 - **API server** — all features controllable via HTTP (`http://127.0.0.1:9900`)
 
-This means an AI agent running inside Molten can read the screenshot, analyze the UI state, and control the app — enabling workflows like visual bug detection, automated UI testing, or self-modification.
+Since Molten is open source, you can do the same — run Claude Code inside Molten, point it at the source, and let it capture, analyze, and improve the app. It's a convenient way to develop and debug UI issues hands-free.
 
 ---
 
