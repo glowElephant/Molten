@@ -87,6 +87,7 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
           key === 'b' ||  // Toggle sidebar
           key === 'p' ||  // Command palette
           key === 'w' ||  // Close session
+          key === 'd' ||  // Split vertical / horizontal
           key === ',' ||  // Settings
           key === 'tab' || // Next session
           (key >= '1' && key <= '9') // Switch session by number

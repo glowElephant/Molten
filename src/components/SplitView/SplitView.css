@@ -1,0 +1,55 @@
+.split-container {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.split-container--horizontal {
+  flex-direction: row;
+}
+
+.split-container--vertical {
+  flex-direction: column;
+}
+
+.split-pane {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.split-divider {
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  transition: background 0.15s ease;
+  z-index: 10;
+}
+
+.split-divider--horizontal {
+  width: 3px;
+  cursor: col-resize;
+}
+
+.split-divider--vertical {
+  height: 3px;
+  cursor: row-resize;
+}
+
+.split-divider:hover {
+  background: var(--color-accent, #7c3aed);
+}
+
+.split-leaf {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+}
+
+.split-leaf--active {
+  outline: 1px solid rgba(124, 58, 237, 0.3);
+  outline-offset: -1px;
+}
