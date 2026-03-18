@@ -16,6 +16,24 @@ interface MessageBusStore {
   clearHistory: () => void;
 }
 
+// Strip ANSI escape sequences, control chars, and terminal noise
+function stripAnsi(text: string): string {
+  return text
+    // Remove ANSI escape sequences (CSI, OSC, etc.)
+    .replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
+    .replace(/\x1b\][^\x07]*\x07/g, '')
+    .replace(/\x1b[()][0-9A-B]/g, '')
+    .replace(/\x1b[>=<]/g, '')
+    .replace(/\x1b\[\?[0-9;]*[hlsr]/g, '')
+    .replace(/\x1b\[[0-9]*[ABCDJKHS]/g, '')
+    // Remove carriage returns and other control chars (keep \n)
+    .replace(/\r/g, '')
+    .replace(/[\x00-\x09\x0b-\x1f\x7f]/g, '')
+    // Clean up multiple blank lines
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function generateMsgId(): string {
   return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -53,8 +71,10 @@ export const useMessageBusStore = create<MessageBusStore>((set, get) => ({
   },
 
   recordOutput: (sessionId: string, chunk: string) => {
+    const clean = stripAnsi(chunk);
+    if (!clean) return; // skip empty after stripping
     const current = get().lastOutputBySession.get(sessionId) || '';
-    const updated = (current + chunk).slice(-MAX_OUTPUT_BUFFER);
+    const updated = (current + clean).slice(-MAX_OUTPUT_BUFFER);
     set((state) => {
       const newMap = new Map(state.lastOutputBySession);
       newMap.set(sessionId, updated);
@@ -63,7 +83,8 @@ export const useMessageBusStore = create<MessageBusStore>((set, get) => ({
   },
 
   getLastOutput: (sessionId: string) => {
-    return get().lastOutputBySession.get(sessionId) || '';
+    const raw = get().lastOutputBySession.get(sessionId) || '';
+    return stripAnsi(raw);
   },
 
   clearHistory: () => {
