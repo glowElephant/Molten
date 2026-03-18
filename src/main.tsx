@@ -27,6 +27,21 @@ if (import.meta.env.DEV) {
       case 'capture':
         captureSelf().catch(() => {});
         break;
+      case 'session.close': {
+        const state = useSessionStore.getState();
+        if (state.activeSessionId) state.closeSession(state.activeSessionId);
+        break;
+      }
+      default:
+        // Handle session.switch.N
+        if (action.startsWith('session.switch.')) {
+          const idx = parseInt(action.replace('session.switch.', '')) - 1;
+          const keys = Array.from(useSessionStore.getState().sessions.keys());
+          if (idx >= 0 && idx < keys.length) {
+            useSessionStore.getState().setActiveSession(keys[idx]);
+          }
+        }
+        break;
     }
     // Auto-capture after command
     setTimeout(() => captureSelf().catch(() => {}), 500);

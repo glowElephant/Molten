@@ -97,6 +97,20 @@ fn route(handle: &tauri::AppHandle, queue: &Arc<CommandQueue>, path: &str) -> (&
             ("200 OK", result)
         }
 
+        // /api/session/switch/N — switch to session by index (1-based)
+        _ if path.starts_with("/api/session/switch/") => {
+            let idx = path.trim_start_matches("/api/session/switch/");
+            let js = format!("window.__moltenExec('session.switch.{}')", idx);
+            eval_js(handle, &js);
+            ("200 OK", format!(r#"{{"success":true,"action":"session.switch","index":{}}}"#, idx))
+        }
+
+        // /api/session/close — close active session
+        "/api/session/close" => {
+            eval_js(handle, "window.__moltenExec('session.close')");
+            ("200 OK", r#"{"success":true,"action":"session.close"}"#.to_string())
+        }
+
         _ => ("404 Not Found", format!(r#"{{"error":"Unknown: {}"}}"#, path)),
     }
 }
