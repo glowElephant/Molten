@@ -23,12 +23,12 @@ export const useQuickCommandStore = create<QuickCommandStore>((set) => ({
     {
       id: 'default-cc-bypass',
       name: 'Claude Code (bypass)',
-      command: 'cd /c/Git && claude --dangerously-skip-permissions',
+      command: 'claude --dangerously-skip-permissions',
     },
     {
       id: 'default-cc-normal',
       name: 'Claude Code',
-      command: 'cd /c/Git && claude',
+      command: 'claude',
     },
   ],
 
