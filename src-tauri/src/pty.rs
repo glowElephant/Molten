@@ -65,10 +65,17 @@ impl PtyManager {
         let shell = config.shell.unwrap_or_else(|| default_shell());
 
         let mut cmd = CommandBuilder::new(&shell);
+        // Launch as interactive login shell so .bashrc/.bash_profile are properly sourced
+        cmd.arg("--login");
+        cmd.arg("-i");
 
         if let Some(cwd) = &config.cwd {
             cmd.cwd(cwd);
         }
+
+        // Mark this PTY as running inside Molten so hooks can skip terminal-specific actions
+        cmd.env("MOLTEN", "1");
+        cmd.env("TERM_PROGRAM", "molten");
 
         if let Some(env) = &config.env {
             for (key, value) in env {

@@ -11,8 +11,14 @@ export function TitleBar({ position = 'top' }: TitleBarProps) {
 
   const appWindow = getCurrentWindow();
 
-  const handleMinimize = () => appWindow.minimize();
-  const handleMaximize = async () => {
+  const handleMinimize = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    appWindow.minimize();
+  };
+  const handleMaximize = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
     const isMaximized = await appWindow.isMaximized();
     if (isMaximized) {
       appWindow.unmaximize();
@@ -20,17 +26,20 @@ export function TitleBar({ position = 'top' }: TitleBarProps) {
       appWindow.maximize();
     }
   };
-  const handleClose = () => appWindow.close();
-  const handleDragStart = () => appWindow.startDragging();
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    appWindow.close();
+  };
 
   const isVertical = position === 'left' || position === 'right';
 
   return (
     <div
       className={`titlebar titlebar--${position} ${isVertical ? 'titlebar--vertical' : ''}`}
-      onMouseDown={handleDragStart}
+      data-tauri-drag-region
     >
-      <div className="titlebar__brand">
+      <div className="titlebar__brand" data-tauri-drag-region>
         <span className="titlebar__logo">◆</span>
         {!isVertical && <span className="titlebar__title">Molten</span>}
       </div>

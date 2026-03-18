@@ -32,11 +32,13 @@ function App() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    // Use capture phase to intercept before xterm.js gets the event
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [createSession]);
 
-  const hasActiveSession = activeSessionId && sessions.has(activeSessionId);
+  const sessionList = Array.from(sessions.values());
+  const hasAnySessions = sessionList.length > 0;
 
   return (
     <div className="app" data-theme={settings.theme}>
@@ -48,9 +50,23 @@ function App() {
         {sidebar.position === 'left' && <Sidebar />}
 
         <main className="app__content">
-          {hasActiveSession ? (
-            <TerminalPanel sessionId={activeSessionId} />
-          ) : (
+          {/* Render ALL sessions, hide inactive ones with CSS */}
+          {sessionList.map((session) => (
+            <div
+              key={session.id}
+              className="app__terminal-wrapper"
+              style={{
+                display: session.id === activeSessionId ? 'flex' : 'none',
+                flex: 1,
+                minHeight: 0,
+              }}
+            >
+              <TerminalPanel sessionId={session.id} />
+            </div>
+          ))}
+
+          {/* Show placeholder only when no sessions exist */}
+          {!hasAnySessions && (
             <div className="app__placeholder">
               <div className="app__placeholder-logo">◆</div>
               <h1 className="app__placeholder-title">Molten</h1>

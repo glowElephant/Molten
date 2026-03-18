@@ -77,6 +77,14 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
       allowProposedApi: true,
     });
 
+    // Let app shortcuts (Ctrl+N, Ctrl+B, etc.) pass through instead of being consumed
+    terminal.attachCustomKeyEventHandler((e: KeyboardEvent) => {
+      if (e.ctrlKey && (e.key === 'n' || e.key === 'b' || e.key === 'p')) {
+        return false; // Don't handle in xterm, let it propagate
+      }
+      return true;
+    });
+
     const fitAddon = new FitAddon();
     const searchAddon = new SearchAddon();
 
@@ -129,16 +137,19 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
       updateStatus(sessionId, 'completed');
     });
 
-    // Spawn PTY process
-    invoke('pty_spawn', {
-      sessionId,
-      config: {
-        shell: settings.terminal.defaultShell || null,
-        cwd: settings.terminal.defaultCwd || null,
-        env: null,
-        cols: terminal.cols,
-        rows: terminal.rows,
-      },
+    // Spawn PTY process (only if not already running)
+    invoke('pty_has_session', { sessionId }).then((exists) => {
+      if (exists) return; // PTY already running, just reconnect
+      return invoke('pty_spawn', {
+        sessionId,
+        config: {
+          shell: settings.terminal.defaultShell || null,
+          cwd: settings.terminal.defaultCwd || null,
+          env: null,
+          cols: terminal.cols,
+          rows: terminal.rows,
+        },
+      });
     }).catch((err) => {
       terminal.writeln(`\x1b[31mFailed to start terminal: ${err}\x1b[0m`);
       updateStatus(sessionId, 'error');
@@ -150,13 +161,13 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
     });
     resizeObserver.observe(containerRef.current);
 
-    // Cleanup
+    // Cleanup — only dispose terminal UI, do NOT kill PTY
+    // PTY is killed when session is explicitly closed via closeSession()
     return () => {
       resizeObserver.disconnect();
       unlistenOutput.then((fn) => fn());
       unlistenExit.then((fn) => fn());
       terminal.dispose();
-      invoke('pty_kill', { sessionId }).catch(() => {});
       terminalRef.current = null;
       fitAddonRef.current = null;
     };
