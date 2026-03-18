@@ -32,6 +32,8 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore key repeat (holding key down)
+      if (e.repeat) return;
       if (e.ctrlKey && !e.shiftKey && e.key === 'n') {
         e.preventDefault();
         createSession();
@@ -132,7 +134,13 @@ function App() {
 
   const sessionList = Array.from(sessions.values());
   const hasAnySessions = sessionList.length > 0;
-  const isSplitMode = layout !== null && layout.type === 'split';
+
+  // Auto-clear layout when no sessions remain
+  const isSplitMode = layout !== null && layout.type === 'split' && hasAnySessions;
+  if (layout && !hasAnySessions) {
+    // Defer to avoid state update during render
+    setTimeout(() => useLayoutStore.getState().setLayout(null), 0);
+  }
 
   return (
     <div className="app" data-theme={settings.theme}>
