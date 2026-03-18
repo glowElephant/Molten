@@ -18,6 +18,14 @@
 
 ---
 
+<p align="center">
+  <img src="docs/screenshot.png" alt="Molten Screenshot" width="100%" />
+  <br/>
+  <em>Claude Code 멀티 에이전트 팀이 Molten 안에서 병렬 작업 중 — 팀 리드 + alpha/bravo 에이전트</em>
+</p>
+
+---
+
 ## What is Molten?
 
 Molten is a **desktop terminal wrapper** built for managing multiple AI coding agent sessions — Claude Code, Codex, Gemini CLI, Aider, and more.
