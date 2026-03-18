@@ -2,15 +2,13 @@
 use windows::Win32::{
     Foundation::{HWND, RECT},
     Graphics::Gdi::{
-        CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject,
+        BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject,
         GetDC, GetDIBits, ReleaseDC, SelectObject, BITMAPINFO, BITMAPINFOHEADER,
-        BI_RGB, DIB_RGB_COLORS,
+        BI_RGB, DIB_RGB_COLORS, SRCCOPY,
     },
     UI::WindowsAndMessaging::GetClientRect,
 };
 
-/// Capture the Molten window and save as PNG.
-/// Uses Win32 BitBlt — works even when window is behind other windows.
 #[tauri::command]
 pub fn capture_window(window: tauri::Window) -> Result<String, String> {
     #[cfg(target_os = "windows")]
@@ -28,13 +26,12 @@ pub fn capture_window(window: tauri::Window) -> Result<String, String> {
 #[cfg(target_os = "windows")]
 fn capture_window_win32(window: tauri::Window) -> Result<String, String> {
     use image::{ImageBuffer, Rgba};
-    use windows::Win32::Graphics::Gdi::BitBlt;
-    use windows::Win32::Graphics::Gdi::SRCCOPY;
 
     let hwnd = window.hwnd().map_err(|e| format!("Failed to get HWND: {}", e))?;
     let hwnd = HWND(hwnd.0);
 
     unsafe {
+        // Use GetWindowRect instead of GetClientRect to capture full window
         let mut rect = RECT::default();
         GetClientRect(hwnd, &mut rect)
             .map_err(|e| format!("GetClientRect failed: {}", e))?;
@@ -46,22 +43,32 @@ fn capture_window_win32(window: tauri::Window) -> Result<String, String> {
             return Err("Window has no size".to_string());
         }
 
+        // Use screen DC instead of window DC for hardware-accelerated content
+        let hdc_screen = GetDC(None); // Screen DC
         let hdc_window = GetDC(Some(hwnd));
-        let hdc_mem = CreateCompatibleDC(Some(hdc_window));
-        let hbitmap = CreateCompatibleBitmap(hdc_window, width, height);
-
+        let hdc_mem = CreateCompatibleDC(Some(hdc_screen));
+        let hbitmap = CreateCompatibleBitmap(hdc_screen, width, height);
         let old_bitmap = SelectObject(hdc_mem, hbitmap.into());
 
-        // BitBlt captures from the window's DC
-        BitBlt(hdc_mem, 0, 0, width, height, Some(hdc_window), 0, 0, SRCCOPY)
-            .map_err(|e| format!("BitBlt failed: {}", e))?;
+        // Get window position on screen for screen DC capture
+        let mut window_rect = RECT::default();
+        windows::Win32::UI::WindowsAndMessaging::GetWindowRect(hwnd, &mut window_rect)
+            .map_err(|e| format!("GetWindowRect failed: {}", e))?;
 
-        // Extract pixel data
+        // Try capturing from screen DC (captures composited/GPU content)
+        let _ = BitBlt(
+            hdc_mem, 0, 0, width, height,
+            Some(hdc_screen),
+            window_rect.left, window_rect.top,
+            SRCCOPY,
+        );
+
+        // Extract pixels
         let mut bmi = BITMAPINFO {
             bmiHeader: BITMAPINFOHEADER {
                 biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
                 biWidth: width,
-                biHeight: -height, // Top-down
+                biHeight: -height,
                 biPlanes: 1,
                 biBitCount: 32,
                 biCompression: BI_RGB.0,
@@ -82,13 +89,13 @@ fn capture_window_win32(window: tauri::Window) -> Result<String, String> {
             DIB_RGB_COLORS,
         );
 
-        // Cleanup GDI
         SelectObject(hdc_mem, old_bitmap);
         let _ = DeleteObject(hbitmap.into());
         let _ = DeleteDC(hdc_mem);
         ReleaseDC(Some(hwnd), hdc_window);
+        ReleaseDC(None, hdc_screen);
 
-        // Convert BGRA to RGBA
+        // BGRA → RGBA
         for chunk in pixels.chunks_exact_mut(4) {
             chunk.swap(0, 2);
         }
