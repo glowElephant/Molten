@@ -1,0 +1,18 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="molten-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="100%" style="stop-color:#06b6d4"/>
+    </linearGradient>
+    <filter id="goo">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="goo"/>
+    </filter>
+  </defs>
+  <g filter="url(#goo)">
+    <circle cx="50" cy="55" r="28" fill="url(#molten-gradient)"/>
+    <circle cx="75" cy="45" r="20" fill="url(#molten-gradient)"/>
+    <circle cx="55" cy="75" r="14" fill="url(#molten-gradient)"/>
+  </g>
+  <text x="60" y="108" font-family="Inter, sans-serif" font-size="14" font-weight="700" fill="#e2e8f0" text-anchor="middle">MOLTEN</text>
+</svg>
