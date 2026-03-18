@@ -13,28 +13,32 @@
 - [x] Custom title bar (minimize/maximize/close, icon toggle)
 - [x] Status bar (model/tokens/cost/notification badge)
 - [x] Notification panel (auto-notifications on status change)
-- [x] Settings UI (4 tabs: General, Terminal, Notifications, Appearance)
+- [x] Settings UI (5 tabs: General, Terminal, Notifications, Appearance, Triggers)
 - [x] Settings persistence (JSON file, survives restart)
 - [x] Command palette (Ctrl+P, search all actions)
 - [x] Keybinding guide (Ctrl+Shift+?)
 - [x] Workspace presets (Focus, Dual, Triple, Stack)
 - [x] Dark Glassmorphism theme
-- [x] 69 tests (58 TypeScript + 11 Rust)
+- [x] 63 tests (TypeScript + Rust)
 - [x] Dev API server + window self-capture (automated testing)
 
-### Phase 1.5 (Next)
-- [ ] Session grouping system
-- [ ] Sidebar drag reorder
-- [ ] Docking system (drag panels to dock/undock)
-- [ ] Auto-start claude on session creation (option)
+### Completed (Phase 1.5)
+- [x] Multi-group support (multiple independent split groups)
+- [x] Sidebar drag reorder (groups + standalone sessions)
+- [x] Group collapse/expand + rename
+- [x] Layer system (split groups ↔ standalone session switching)
 
-### Phase 2 (Polish)
-- [ ] Gooey merge/tear animations
-- [ ] Block-based output
-- [ ] Inter-session communication
-- [ ] Triggers (regex-based automation)
-- [ ] Session persistence (survive restart)
-- [ ] Quick terminal (Quake mode)
+### Completed (Phase 2 — Polish)
+- [x] Session persistence & resurrection (F2.7) — workspace.json
+- [x] Triggers system (F2.5) — regex pattern matching + notification/command/sound actions
+- [x] Contextual keybinding hints (F2.9) — StatusBar dynamic hints with toggle
+- [x] Inter-session communication (F2.3) — Pipe/Broadcast via CommandPalette
+- [x] Liquid animations (F2.1) — Spring physics, Gooey SVG filter, CSS transitions
+- [x] Custom window shapes (F2.6) — CSS clip-path (rounded/pill/hexagon/diamond/circle)
+
+### Phase 2 — Remaining
+- [ ] Block-based output (F2.2) — Warp-style command blocks
+- [ ] Quick terminal / Quake mode (F2.8) — deferred
 
 ### Phase 3 (Ecosystem)
 - [ ] Plugin system + API
@@ -566,16 +570,14 @@ Plugins can subscribe to any event and emit custom events.
 - [ ] Windows + macOS + Linux builds
 
 ### Phase 2 — Polish
-- [ ] Gooey merge/tear animations
-- [ ] Block-based output mode
-- [ ] Inter-session message bus
-- [ ] Cost & usage dashboard
-- [ ] Triggers system
-- [ ] Session persistence & resurrection
-- [ ] Quick terminal (Quake mode)
-- [ ] Keybinding hints bar
-- [ ] Window shape customization
-- [ ] Panel detach to separate OS window
+- [x] Gooey merge/tear animations (F2.1)
+- [ ] Block-based output mode (F2.2)
+- [x] Inter-session message bus (F2.3)
+- [x] Triggers system (F2.5)
+- [x] Session persistence & resurrection (F2.7)
+- [ ] Quick terminal / Quake mode (F2.8 — deferred)
+- [x] Keybinding hints bar (F2.9)
+- [x] Window shape customization (F2.6)
 
 ### Phase 3 — Ecosystem
 - [ ] Plugin API (TypeScript SDK)
