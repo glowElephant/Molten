@@ -104,7 +104,7 @@ export interface TitleBarConfig {
   position: 'top' | 'bottom' | 'left' | 'right' | 'hidden';
 }
 
-export type WindowShape = 'default' | 'rounded' | 'pill' | 'hexagon' | 'diamond' | 'circle';
+export type WindowShape = 'default' | 'rounded' | 'extra-rounded' | 'sharp';
 
 // Inter-session message types
 export interface InterSessionMessage {

@@ -12,6 +12,7 @@ interface MessageBusStore {
   sendToSession: (fromId: string, toId: string, content: string) => void;
   broadcast: (fromId: string, content: string) => void;
   recordOutput: (sessionId: string, chunk: string) => void;
+  clearOutputBuffer: (sessionId: string) => void;
   getLastOutput: (sessionId: string) => string;
   clearHistory: () => void;
 }
@@ -78,6 +79,14 @@ export const useMessageBusStore = create<MessageBusStore>((set, get) => ({
     set((state) => {
       const newMap = new Map(state.lastOutputBySession);
       newMap.set(sessionId, updated);
+      return { lastOutputBySession: newMap };
+    });
+  },
+
+  clearOutputBuffer: (sessionId: string) => {
+    set((state) => {
+      const newMap = new Map(state.lastOutputBySession);
+      newMap.set(sessionId, '');
       return { lastOutputBySession: newMap };
     });
   },

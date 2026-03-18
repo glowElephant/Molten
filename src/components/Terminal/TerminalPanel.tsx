@@ -131,6 +131,10 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
     terminal.onData((data) => {
       invoke('pty_write', { sessionId, data }).catch(console.error);
       eventBus.emit('session:input', { sessionId, data });
+      // Clear output buffer on Enter so "last output" only captures command result
+      if (data.includes('\r') || data.includes('\n')) {
+        useMessageBusStore.getState().clearOutputBuffer(sessionId);
+      }
     });
 
     // Listen for PTY output

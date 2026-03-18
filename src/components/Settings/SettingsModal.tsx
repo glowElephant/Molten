@@ -232,10 +232,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                   >
                     <option value="default">Default</option>
                     <option value="rounded">Rounded</option>
-                    <option value="pill">Pill</option>
-                    <option value="hexagon">Hexagon</option>
-                    <option value="diamond">Diamond</option>
-                    <option value="circle">Circle</option>
+                    <option value="extra-rounded">Extra Rounded</option>
+                    <option value="sharp">Sharp</option>
                   </select>
                 </SettingRow>
               </div>
