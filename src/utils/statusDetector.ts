@@ -96,7 +96,7 @@ export function getStatusColor(status: SessionStatus): string {
     case 'waiting':
       return 'var(--color-status-waiting, #f59e0b)';
     case 'idle':
-      return 'var(--color-status-idle, #22c55e)';
+      return 'var(--color-status-idle, #a78bfa)';
     case 'error':
       return 'var(--color-status-error, #ef4444)';
     case 'completed':
