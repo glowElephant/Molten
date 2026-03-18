@@ -15,9 +15,6 @@ export function SplitView({ node }: SplitViewProps) {
   }
 
   if (node.type === 'split' && node.children && node.children.length >= 2) {
-    const isHorizontal = node.direction === 'horizontal';
-    const childSize = `${100 / node.children.length}%`;
-
     return (
       <div className={`split-container split-container--${node.direction || 'horizontal'}`}>
         {node.children.map((child, index) => (
@@ -25,10 +22,7 @@ export function SplitView({ node }: SplitViewProps) {
             {index > 0 && (
               <div className={`split-divider split-divider--${node.direction || 'horizontal'}`} />
             )}
-            <div
-              className="split-pane"
-              style={{ [isHorizontal ? 'width' : 'height']: childSize }}
-            >
+            <div className="split-pane">
               <SplitView node={child} />
             </div>
           </div>
