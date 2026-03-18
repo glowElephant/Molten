@@ -195,9 +195,20 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
       updateStatus(sessionId, 'error');
     });
 
-    // Resize observer
-    const resizeObserver = new ResizeObserver(() => {
-      handleResize();
+    // Resize observer — debounced to prevent scroll jumps
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastWidth = 0;
+    let lastHeight = 0;
+    const resizeObserver = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      // Only resize if dimensions actually changed (not just re-render)
+      if (Math.abs(width - lastWidth) < 2 && Math.abs(height - lastHeight) < 2) return;
+      lastWidth = width;
+      lastHeight = height;
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => handleResize(), 100);
     });
     resizeObserver.observe(containerRef.current);
 
