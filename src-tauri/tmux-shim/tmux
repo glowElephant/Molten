@@ -106,13 +106,13 @@ case "$CMD" in
 
   new-window)
     # Parse: new-window -t <target> -n <name> -P -F "#{pane_id}"
+    # Create a standalone session (not split)
     api_call "session/create" > /dev/null
     sleep 0.3
 
     PANE_ID=$(next_pane_id)
     register_pane "$PANE_ID"
 
-    # Check if -P flag present
     for arg in "${ARGS[@]}"; do
       if [ "$arg" = "-P" ]; then
         echo "$PANE_ID"
@@ -132,10 +132,9 @@ case "$CMD" in
       [ "$arg" = "-P" ] && PRINT_PANE=true
     done
 
-    api_call "session/create" > /dev/null
-    sleep 0.3
+    # split API already creates a new session internally
     api_call "split/$DIRECTION" > /dev/null
-    sleep 0.2
+    sleep 0.3
 
     PANE_ID=$(next_pane_id)
     register_pane "$PANE_ID"
