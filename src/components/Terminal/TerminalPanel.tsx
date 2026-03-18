@@ -26,17 +26,33 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
 
   const handleResize = useCallback(() => {
     const fitAddon = fitAddonRef.current;
-    if (!fitAddon) return;
+    const terminal = terminalRef.current;
+    if (!fitAddon || !terminal) return;
 
     try {
+      // Preserve scroll position across fit()
+      const viewport = terminal.element?.querySelector('.xterm-viewport');
+      const scrollTop = viewport?.scrollTop ?? 0;
+      const wasAtBottom = viewport
+        ? viewport.scrollTop >= viewport.scrollHeight - viewport.clientHeight - 5
+        : true;
+
+      const oldCols = terminal.cols;
+      const oldRows = terminal.rows;
       fitAddon.fit();
-      const terminal = terminalRef.current;
-      if (terminal) {
+
+      // Only notify PTY if dimensions actually changed
+      if (terminal.cols !== oldCols || terminal.rows !== oldRows) {
         invoke('pty_resize', {
           sessionId,
           cols: terminal.cols,
           rows: terminal.rows,
         }).catch(console.error);
+      }
+
+      // Restore scroll position (unless user was at bottom — then stay at bottom)
+      if (viewport && !wasAtBottom) {
+        viewport.scrollTop = scrollTop;
       }
     } catch {
       // Ignore fit errors during unmount
