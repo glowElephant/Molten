@@ -290,12 +290,6 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
                 terminalRef.current?.focus();
               }
             }}
-            onInput={(e) => {
-              // Auto-resize textarea
-              const el = e.currentTarget;
-              el.style.height = 'auto';
-              el.style.height = Math.min(el.scrollHeight, 100) + 'px';
-            }}
             placeholder="한글 입력 (Enter 전송, Shift+Enter 개행, Esc 닫기)"
           />
           <button className="terminal-panel__ime-send" onClick={handleImeSend}>
