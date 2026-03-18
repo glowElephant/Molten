@@ -51,6 +51,32 @@ function App() {
         e.preventDefault();
         setPaletteVisible((v) => !v);
       }
+      // Ctrl+W: Close active session
+      if (e.ctrlKey && e.key === 'w') {
+        e.preventDefault();
+        const { activeSessionId, closeSession } = useSessionStore.getState();
+        if (activeSessionId) closeSession(activeSessionId);
+      }
+      // Ctrl+1~9: Switch to session by index
+      if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
+        e.preventDefault();
+        const idx = parseInt(e.key) - 1;
+        const sessionList = Array.from(useSessionStore.getState().sessions.keys());
+        if (idx < sessionList.length) {
+          useSessionStore.getState().setActiveSession(sessionList[idx]);
+        }
+      }
+      // Ctrl+Tab: Next session
+      if (e.ctrlKey && e.key === 'Tab') {
+        e.preventDefault();
+        const state = useSessionStore.getState();
+        const keys = Array.from(state.sessions.keys());
+        if (keys.length > 1 && state.activeSessionId) {
+          const idx = keys.indexOf(state.activeSessionId);
+          const nextIdx = (idx + 1) % keys.length;
+          state.setActiveSession(keys[nextIdx]);
+        }
+      }
       // Escape: Close modals
       if (e.key === 'Escape') {
         setPaletteVisible(false);
