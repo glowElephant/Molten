@@ -36,10 +36,10 @@ function SplitContainer({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const count = childNodes.length;
-  // Store sizes as fractions (e.g., [0.33, 0.33, 0.33] for 3 panes)
   const [sizes, setSizes] = useState<number[]>(() =>
     Array(count).fill(1 / count)
   );
+  const [isDragging, setIsDragging] = useState(false);
   const isHorizontal = direction === 'horizontal';
 
   const handleDividerMouseDown = useCallback(
@@ -83,8 +83,12 @@ function SplitContainer({
         document.body.style.userSelect = '';
       };
 
+      setIsDragging(true);
       document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
+      document.addEventListener('mouseup', () => {
+        onMouseUp();
+        setIsDragging(false);
+      });
       document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize';
       document.body.style.userSelect = 'none';
     },
@@ -96,6 +100,8 @@ function SplitContainer({
       ref={containerRef}
       className={`split-container split-container--${direction}`}
     >
+      {/* Overlay to prevent xterm from stealing mouse events during drag */}
+      {isDragging && <div className="split-drag-overlay" />}
       {childNodes.map((child, index) => (
         <div key={getNodeKey(child, index)} style={{ display: 'contents' }}>
           {index > 0 && (

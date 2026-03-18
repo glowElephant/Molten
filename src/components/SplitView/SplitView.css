@@ -42,6 +42,13 @@
   background: var(--color-accent, #7c3aed);
 }
 
+.split-drag-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  cursor: inherit;
+}
+
 .split-leaf {
   flex: 1;
   display: flex;

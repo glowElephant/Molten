@@ -1,6 +1,7 @@
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSessionStore } from '../../stores/sessionStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useLayoutStore } from '../../stores/layoutStore';
 import { SessionItem } from './SessionItem';
 import './Sidebar.css';
 
@@ -72,7 +73,10 @@ export function Sidebar() {
               session={session}
               index={index + 1}
               isActive={session.id === activeSessionId}
-              onClick={() => setActiveSession(session.id)}
+              onClick={() => {
+                useLayoutStore.getState().setLayout(null);
+                setActiveSession(session.id);
+              }}
             />
           ))
         )}
