@@ -65,9 +65,18 @@ impl PtyManager {
         let shell = config.shell.unwrap_or_else(|| default_shell());
 
         let mut cmd = CommandBuilder::new(&shell);
-        // Launch as interactive login shell so .bashrc/.bash_profile are properly sourced
-        cmd.arg("--login");
-        cmd.arg("-i");
+        // Use --rcfile to explicitly source .bashrc before first prompt
+        // This avoids timing issues with --login where PS1 may render
+        // before function definitions are loaded
+        if shell.contains("bash") {
+            let home = dirs::home_dir()
+                .map(|p| p.to_string_lossy().to_string())
+                .unwrap_or_default();
+            if !home.is_empty() {
+                cmd.arg("--rcfile");
+                cmd.arg(format!("{}/.bashrc", home));
+            }
+        }
 
         if let Some(cwd) = &config.cwd {
             cmd.cwd(cwd);
