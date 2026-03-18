@@ -5,6 +5,7 @@ import { StatusBar } from './components/StatusBar';
 import { TerminalPanel } from './components/Terminal';
 import { NotificationPanel } from './components/Notification';
 import { SettingsModal } from './components/Settings';
+import { CommandPalette } from './components/CommandPalette';
 import { useSettingsStore } from './stores/settingsStore';
 import { useSessionStore } from './stores/sessionStore';
 import { useNotificationStore } from './stores/notificationStore';
@@ -19,6 +20,7 @@ function App() {
   const { sessions, activeSessionId, createSession } = useSessionStore();
   const { togglePanel: toggleNotifications } = useNotificationStore();
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [paletteVisible, setPaletteVisible] = useState(false);
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -44,8 +46,14 @@ function App() {
         e.preventDefault();
         setSettingsVisible((v) => !v);
       }
+      // Ctrl+P: Command palette
+      if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        setPaletteVisible((v) => !v);
+      }
       // Escape: Close modals
       if (e.key === 'Escape') {
+        setPaletteVisible(false);
         setSettingsVisible(false);
       }
     };
@@ -103,6 +111,11 @@ function App() {
       {titleBar.position === 'bottom' && <TitleBar position="bottom" />}
       <StatusBar />
 
+      <CommandPalette
+        visible={paletteVisible}
+        onClose={() => setPaletteVisible(false)}
+        onOpenSettings={() => setSettingsVisible(true)}
+      />
       <SettingsModal
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
