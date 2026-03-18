@@ -2,12 +2,27 @@
 use windows::Win32::{
     Foundation::{HWND, RECT},
     Graphics::Gdi::{
-        BitBlt, CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject,
+        CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject,
         GetDC, GetDIBits, ReleaseDC, SelectObject, BITMAPINFO, BITMAPINFOHEADER,
-        BI_RGB, DIB_RGB_COLORS, SRCCOPY,
+        BI_RGB, DIB_RGB_COLORS, HDC,
     },
     UI::WindowsAndMessaging::GetClientRect,
 };
+
+// PrintWindow is not exposed in windows crate 0.61, use raw FFI
+#[cfg(target_os = "windows")]
+unsafe extern "system" fn print_window_raw(hwnd: isize, hdc: isize, flags: u32) -> i32 {
+    // Use LoadLibrary/GetProcAddress approach
+    0 // placeholder
+}
+
+#[cfg(target_os = "windows")]
+mod ffi {
+    #[link(name = "user32")]
+    unsafe extern "system" {
+        pub fn PrintWindow(hwnd: isize, hdc: isize, flags: u32) -> i32;
+    }
+}
 
 #[tauri::command]
 pub fn capture_window(window: tauri::Window) -> Result<String, String> {
@@ -28,12 +43,11 @@ fn capture_window_win32(window: tauri::Window) -> Result<String, String> {
     use image::{ImageBuffer, Rgba};
 
     let hwnd = window.hwnd().map_err(|e| format!("Failed to get HWND: {}", e))?;
-    let hwnd = HWND(hwnd.0);
+    let hwnd_val = HWND(hwnd.0);
 
     unsafe {
-        // Use GetWindowRect instead of GetClientRect to capture full window
         let mut rect = RECT::default();
-        GetClientRect(hwnd, &mut rect)
+        GetClientRect(hwnd_val, &mut rect)
             .map_err(|e| format!("GetClientRect failed: {}", e))?;
 
         let width = rect.right - rect.left;
@@ -43,25 +57,25 @@ fn capture_window_win32(window: tauri::Window) -> Result<String, String> {
             return Err("Window has no size".to_string());
         }
 
-        // Use screen DC instead of window DC for hardware-accelerated content
-        let hdc_screen = GetDC(None); // Screen DC
-        let hdc_window = GetDC(Some(hwnd));
-        let hdc_mem = CreateCompatibleDC(Some(hdc_screen));
-        let hbitmap = CreateCompatibleBitmap(hdc_screen, width, height);
+        let hdc_window = GetDC(Some(hwnd_val));
+        let hdc_mem = CreateCompatibleDC(Some(hdc_window));
+        let hbitmap = CreateCompatibleBitmap(hdc_window, width, height);
         let old_bitmap = SelectObject(hdc_mem, hbitmap.into());
 
-        // Get window position on screen for screen DC capture
-        let mut window_rect = RECT::default();
-        windows::Win32::UI::WindowsAndMessaging::GetWindowRect(hwnd, &mut window_rect)
-            .map_err(|e| format!("GetWindowRect failed: {}", e))?;
+        // Use PrintWindow with PW_RENDERFULLCONTENT (0x02) for GPU content
+        let hdc_raw: isize = std::mem::transmute_copy(&hdc_mem);
+        let hwnd_raw: isize = hwnd.0 as isize;
+        let pw_result = ffi::PrintWindow(hwnd_raw, hdc_raw, 2); // PW_RENDERFULLCONTENT
 
-        // Try capturing from screen DC (captures composited/GPU content)
-        let _ = BitBlt(
-            hdc_mem, 0, 0, width, height,
-            Some(hdc_screen),
-            window_rect.left, window_rect.top,
-            SRCCOPY,
-        );
+        if pw_result == 0 {
+            // Fallback: try without PW_RENDERFULLCONTENT
+            let pw_result2 = ffi::PrintWindow(hwnd_raw, hdc_raw, 0);
+            if pw_result2 == 0 {
+                // Final fallback: BitBlt from window DC
+                use windows::Win32::Graphics::Gdi::{BitBlt, SRCCOPY};
+                let _ = BitBlt(hdc_mem, 0, 0, width, height, Some(hdc_window), 0, 0, SRCCOPY);
+            }
+        }
 
         // Extract pixels
         let mut bmi = BITMAPINFO {
@@ -92,8 +106,7 @@ fn capture_window_win32(window: tauri::Window) -> Result<String, String> {
         SelectObject(hdc_mem, old_bitmap);
         let _ = DeleteObject(hbitmap.into());
         let _ = DeleteDC(hdc_mem);
-        ReleaseDC(Some(hwnd), hdc_window);
-        ReleaseDC(None, hdc_screen);
+        ReleaseDC(Some(hwnd_val), hdc_window);
 
         // BGRA → RGBA
         for chunk in pixels.chunks_exact_mut(4) {
