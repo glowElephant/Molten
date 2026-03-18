@@ -1,67 +1,85 @@
 #!/bin/bash
 # Molten tmux shim — intercepts tmux commands from Claude Code
 # and translates them to Molten API calls.
+#
+# Pane ID mapping: %N → Nth session in Molten (0-based)
+# State tracked in /tmp/molten-tmux/
 
 MOLTEN_API="http://127.0.0.1:9900"
 STATE_DIR="${TMPDIR:-/tmp}/molten-tmux"
-STATE_FILE="$STATE_DIR/state.json"
-PANE_COUNTER_FILE="$STATE_DIR/pane_counter"
+PANES_FILE="$STATE_DIR/panes.list"
+COUNTER_FILE="$STATE_DIR/pane_counter"
+ACTIVE_FILE="$STATE_DIR/active_pane"
 
 mkdir -p "$STATE_DIR"
 
-# Initialize state files if not exist
-if [ ! -f "$PANE_COUNTER_FILE" ]; then
-  echo "0" > "$PANE_COUNTER_FILE"
-  echo "%0" > "$STATE_DIR/panes.list"
-  echo "%0" > "$STATE_DIR/active_pane"
+# Initialize on first run (or if counter file missing)
+if [ ! -f "$COUNTER_FILE" ]; then
+  echo "0" > "$COUNTER_FILE"
+  echo "%0" > "$PANES_FILE"
+  echo "%0" > "$ACTIVE_FILE"
 fi
-[ -f "$STATE_FILE" ] || echo '{}' > "$STATE_FILE"
+
+# ── Helper functions ──
 
 next_pane_id() {
-  local count
-  count=$(cat "$PANE_COUNTER_FILE")
-  count=$((count + 1))
-  echo "$count" > "$PANE_COUNTER_FILE"
-  echo "%${count}"
+  local c=$(cat "$COUNTER_FILE" 2>/dev/null || echo 0)
+  c=$((c + 1))
+  echo "$c" > "$COUNTER_FILE"
+  echo "%${c}"
 }
 
-# Get current pane ID (the active session's pane)
-get_current_pane() {
-  local active
-  active=$(cat "$STATE_DIR/active_pane" 2>/dev/null)
-  echo "${active:-%0}"
+get_active_pane() {
+  cat "$ACTIVE_FILE" 2>/dev/null || echo "%0"
 }
 
-# Map pane ID to session index (1-based)
-pane_to_session_index() {
-  local pane_id="$1"
-  local idx
-  idx=$(grep -n "\"$pane_id\"" "$STATE_DIR/panes.list" 2>/dev/null | head -1 | cut -d: -f1)
-  echo "${idx:-1}"
-}
-
-# Store pane ID
 register_pane() {
-  local pane_id="$1"
-  echo "$pane_id" >> "$STATE_DIR/panes.list"
+  echo "$1" >> "$PANES_FILE"
 }
 
-api_call() {
-  curl -s "$MOLTEN_API/api/$1" 2>/dev/null
+# Get 1-based session index for a pane ID
+pane_to_index() {
+  local pane="$1"
+  local idx=0
+  while IFS= read -r line; do
+    idx=$((idx + 1))
+    if [ "$line" = "$pane" ]; then
+      echo "$idx"
+      return
+    fi
+  done < "$PANES_FILE" 2>/dev/null
+  echo "1"
 }
 
-# Parse arguments
+# URL-encode without python (pure bash)
+urlencode() {
+  local str="$1"
+  local encoded=""
+  local i c
+  for ((i = 0; i < ${#str}; i++)); do
+    c="${str:$i:1}"
+    case "$c" in
+      [a-zA-Z0-9.~_-]) encoded+="$c" ;;
+      ' ') encoded+="%20" ;;
+      *) encoded+=$(printf '%%%02X' "'$c") ;;
+    esac
+  done
+  echo "$encoded"
+}
+
+api() {
+  curl -s "${MOLTEN_API}/api/$1" 2>/dev/null
+}
+
+# ── Parse global options ──
+
 CMD=""
 ARGS=()
-SOCKET=""
 
-# Handle -L socket option
 while [ $# -gt 0 ]; do
   case "$1" in
-    -L)
-      SOCKET="$2"
-      shift 2
-      ;;
+    -L) shift 2 ;;           # ignore socket name
+    -f) shift 2 ;;           # ignore config file
     *)
       if [ -z "$CMD" ]; then
         CMD="$1"
@@ -73,233 +91,192 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# ── Parse named options from ARGS ──
+# Returns value for a flag like: get_opt -t → target value
+get_opt() {
+  local flag="$1"
+  local i
+  for ((i = 0; i < ${#ARGS[@]}; i++)); do
+    if [ "${ARGS[$i]}" = "$flag" ]; then
+      echo "${ARGS[$((i + 1))]}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+has_flag() {
+  local flag="$1"
+  for arg in "${ARGS[@]}"; do
+    [ "$arg" = "$flag" ] && return 0
+  done
+  return 1
+}
+
+# ── Command handlers ──
+
 case "$CMD" in
+
   -V)
     echo "tmux 3.4"
-    exit 0
     ;;
 
   has-session)
-    # Always succeed — we have a session
     exit 0
     ;;
 
   new-session)
-    # Parse: new-session -d -s <name> [-n <window>] [-c <dir>] [-P -F "#{pane_id}"]
-    PRINT_PANE=false
-    for arg in "${ARGS[@]}"; do
-      [ "$arg" = "-P" ] && PRINT_PANE=true
-    done
-
-    api_call "session/create" > /dev/null
+    api "session/create" > /dev/null
     sleep 0.3
-
     PANE_ID=$(next_pane_id)
     register_pane "$PANE_ID"
-    echo "$PANE_ID" > "$STATE_DIR/active_pane"
-
-    if $PRINT_PANE; then
-      echo "$PANE_ID"
-    fi
-    exit 0
+    echo "$PANE_ID" > "$ACTIVE_FILE"
+    has_flag "-P" && echo "$PANE_ID"
     ;;
 
   new-window)
-    # Parse: new-window -t <target> -n <name> -P -F "#{pane_id}"
-    # Create a standalone session (not split)
-    api_call "session/create" > /dev/null
+    api "session/create" > /dev/null
     sleep 0.3
-
     PANE_ID=$(next_pane_id)
     register_pane "$PANE_ID"
-
-    for arg in "${ARGS[@]}"; do
-      if [ "$arg" = "-P" ]; then
-        echo "$PANE_ID"
-        break
-      fi
-    done
-    exit 0
+    has_flag "-P" && echo "$PANE_ID"
     ;;
 
   split-window)
-    # Parse: split-window -t <pane> -h|-v [-l NN%] -P -F "#{pane_id}"
-    DIRECTION="horizontal"
-    PRINT_PANE=false
-    for arg in "${ARGS[@]}"; do
-      [ "$arg" = "-v" ] && DIRECTION="vertical"
-      [ "$arg" = "-h" ] && DIRECTION="horizontal"
-      [ "$arg" = "-P" ] && PRINT_PANE=true
-    done
+    DIR="horizontal"
+    has_flag "-v" && DIR="vertical"
+    has_flag "-h" && DIR="horizontal"
 
-    # split API already creates a new session internally
-    api_call "split/$DIRECTION" > /dev/null
+    # split API creates session + splits internally
+    api "split/$DIR" > /dev/null
     sleep 0.3
 
     PANE_ID=$(next_pane_id)
     register_pane "$PANE_ID"
-
-    if $PRINT_PANE; then
-      echo "$PANE_ID"
-    fi
-    exit 0
+    has_flag "-P" && echo "$PANE_ID"
     ;;
 
   send-keys)
-    # Parse: send-keys -t <pane_id> "<command>" Enter
-    TARGET=""
+    # Collect target and text
+    TARGET=$(get_opt "-t")
     TEXT=""
-    i=0
-    while [ $i -lt ${#ARGS[@]} ]; do
-      case "${ARGS[$i]}" in
-        -t)
-          i=$((i + 1))
-          TARGET="${ARGS[$i]}"
-          ;;
-        Enter|C-c|C-d)
-          # Ignore Enter/control keys — we add \n ourselves
-          ;;
+    SEND_ENTER=false
+
+    for ((i = 0; i < ${#ARGS[@]}; i++)); do
+      arg="${ARGS[$i]}"
+      case "$arg" in
+        -t) ((i++)) ;;  # skip -t and its value
+        Enter) SEND_ENTER=true ;;
+        C-c|C-d|C-l) ;;  # ignore control keys
         *)
-          TEXT="${ARGS[$i]}"
+          # Accumulate text (might be multiple args)
+          [ -n "$TEXT" ] && TEXT+=" "
+          TEXT+="$arg"
           ;;
       esac
-      i=$((i + 1))
     done
 
     if [ -n "$TEXT" ]; then
-      # Find session index for target pane
+      # Switch to target pane's session
       if [ -n "$TARGET" ]; then
-        # Handle "session:window" format
-        TARGET_PANE=$(echo "$TARGET" | sed 's/.*://' | grep -o '%[0-9]*' || echo "$TARGET")
-        SESSION_IDX=$(pane_to_session_index "$TARGET_PANE")
-        if [ -n "$SESSION_IDX" ] && [ "$SESSION_IDX" -gt 0 ] 2>/dev/null; then
-          api_call "session/switch/$SESSION_IDX" > /dev/null
+        # Extract pane ID from target (handle "session:window" format)
+        TPANE=$(echo "$TARGET" | grep -o '%[0-9]*' || echo "$TARGET")
+        if [ -n "$TPANE" ]; then
+          IDX=$(pane_to_index "$TPANE")
+          api "session/switch/$IDX" > /dev/null
           sleep 0.1
         fi
       fi
 
-      # URL-encode the text and send
-      ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$TEXT'))" 2>/dev/null || echo "$TEXT")
-      api_call "session/type/$ENCODED" > /dev/null
+      # Send the text
+      ENCODED=$(urlencode "$TEXT")
+      api "session/type/$ENCODED" > /dev/null
+
+      # Send Enter if requested
+      if $SEND_ENTER; then
+        sleep 0.05
+      fi
     fi
-    exit 0
     ;;
 
   select-pane)
-    # Parse: select-pane -t <pane> [-P "bg=..."] [-T <title>]
-    TARGET=""
-    for i in "${!ARGS[@]}"; do
-      if [ "${ARGS[$i]}" = "-t" ]; then
-        TARGET="${ARGS[$((i+1))]}"
-        break
-      fi
-    done
-
+    TARGET=$(get_opt "-t")
     if [ -n "$TARGET" ]; then
-      echo "$TARGET" > "$STATE_DIR/active_pane"
-      SESSION_IDX=$(pane_to_session_index "$TARGET")
-      if [ -n "$SESSION_IDX" ] && [ "$SESSION_IDX" -gt 0 ] 2>/dev/null; then
-        api_call "session/switch/$SESSION_IDX" > /dev/null
+      TPANE=$(echo "$TARGET" | grep -o '%[0-9]*' || echo "$TARGET")
+      if [ -n "$TPANE" ]; then
+        echo "$TPANE" > "$ACTIVE_FILE"
+        IDX=$(pane_to_index "$TPANE")
+        api "session/switch/$IDX" > /dev/null
       fi
     fi
-    exit 0
     ;;
 
   display-message)
-    # Parse: display-message [-t <pane>] -p "<format>"
-    FORMAT=""
-    for i in "${!ARGS[@]}"; do
-      if [ "${ARGS[$i]}" = "-p" ]; then
-        FORMAT="${ARGS[$((i+1))]}"
-        break
-      fi
-    done
-
-    CURRENT=$(get_current_pane)
-    case "$FORMAT" in
-      *pane_id*)
-        echo "$CURRENT"
-        ;;
-      *session_name*window_index*)
-        echo "molten:0"
-        ;;
-      *)
-        echo "$CURRENT"
-        ;;
+    FMT=$(get_opt "-p")
+    CURRENT=$(get_active_pane)
+    case "$FMT" in
+      *pane_id*)           echo "$CURRENT" ;;
+      *session_name*window_index*) echo "molten:0" ;;
+      *session_name*)      echo "molten" ;;
+      *window_index*)      echo "0" ;;
+      *)                   echo "$CURRENT" ;;
     esac
-    exit 0
     ;;
 
   list-panes)
-    # Return all registered panes
-    if [ -f "$STATE_DIR/panes.list" ]; then
-      cat "$STATE_DIR/panes.list"
-    else
-      echo "%0"
-    fi
-    exit 0
+    cat "$PANES_FILE" 2>/dev/null || echo "%0"
     ;;
 
   list-windows)
     echo "swarm-view"
-    exit 0
+    ;;
+
+  list-sessions)
+    echo "molten: 1 windows (created $(date))"
     ;;
 
   kill-pane)
-    # Parse: kill-pane -t <pane>
-    TARGET=""
-    for i in "${!ARGS[@]}"; do
-      if [ "${ARGS[$i]}" = "-t" ]; then
-        TARGET="${ARGS[$((i+1))]}"
-        break
-      fi
-    done
+    TARGET=$(get_opt "-t")
     if [ -n "$TARGET" ]; then
-      SESSION_IDX=$(pane_to_session_index "$TARGET")
-      if [ -n "$SESSION_IDX" ] && [ "$SESSION_IDX" -gt 0 ] 2>/dev/null; then
-        api_call "session/switch/$SESSION_IDX" > /dev/null
-        sleep 0.1
-        api_call "session/close" > /dev/null
-      fi
+      TPANE=$(echo "$TARGET" | grep -o '%[0-9]*' || echo "$TARGET")
+      IDX=$(pane_to_index "$TPANE")
+      api "session/switch/$IDX" > /dev/null
+      sleep 0.1
+      api "session/close" > /dev/null
       # Remove from panes list
-      grep -v "^${TARGET}$" "$STATE_DIR/panes.list" > "$STATE_DIR/panes.list.tmp" 2>/dev/null
-      mv "$STATE_DIR/panes.list.tmp" "$STATE_DIR/panes.list" 2>/dev/null
+      grep -v "^${TPANE}$" "$PANES_FILE" > "$PANES_FILE.tmp" 2>/dev/null
+      mv "$PANES_FILE.tmp" "$PANES_FILE" 2>/dev/null
     fi
-    exit 0
     ;;
 
-  kill-session)
-    # Ignore — we don't kill the whole app
-    exit 0
+  kill-session|kill-server)
+    # Don't kill the app
     ;;
 
   set-option|set)
-    # Ignore visual styling options
-    exit 0
+    # Visual styling — ignore
     ;;
 
   select-layout)
-    # Ignore layout commands
-    exit 0
+    # Layout — ignore (Molten handles its own layout)
     ;;
 
   resize-pane)
-    # Ignore resize
-    exit 0
+    # Resize — ignore
     ;;
 
   break-pane|join-pane)
-    # Ignore hide/show
-    exit 0
+    # Hide/show — ignore
     ;;
 
   load-buffer)
     # Clipboard — ignore
-    exit 0
     ;;
 
   *)
-    # Unknown command — silently succeed
-    exit 0
+    # Unknown — silently succeed
     ;;
+
 esac
+
+exit 0
