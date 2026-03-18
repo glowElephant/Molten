@@ -1,3 +1,4 @@
+import { useRef, useState, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { TerminalPanel } from '../Terminal';
 import { useSessionStore } from '../../stores/sessionStore';
@@ -16,22 +17,105 @@ export function SplitView({ node }: SplitViewProps) {
 
   if (node.type === 'split' && node.children && node.children.length >= 2) {
     return (
-      <div className={`split-container split-container--${node.direction || 'horizontal'}`}>
-        {node.children.map((child, index) => (
-          <div key={getNodeKey(child, index)} style={{ display: 'contents' }}>
-            {index > 0 && (
-              <div className={`split-divider split-divider--${node.direction || 'horizontal'}`} />
-            )}
-            <div className="split-pane">
-              <SplitView node={child} />
-            </div>
-          </div>
-        ))}
-      </div>
+      <SplitContainer
+        direction={node.direction || 'horizontal'}
+        childNodes={node.children}
+      />
     );
   }
 
   return null;
+}
+
+function SplitContainer({
+  direction,
+  childNodes,
+}: {
+  direction: 'horizontal' | 'vertical';
+  childNodes: LayoutNode[];
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const count = childNodes.length;
+  // Store sizes as fractions (e.g., [0.33, 0.33, 0.33] for 3 panes)
+  const [sizes, setSizes] = useState<number[]>(() =>
+    Array(count).fill(1 / count)
+  );
+  const isHorizontal = direction === 'horizontal';
+
+  const handleDividerMouseDown = useCallback(
+    (dividerIndex: number, e: React.MouseEvent) => {
+      e.preventDefault();
+      const container = containerRef.current;
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+      const totalSize = isHorizontal ? rect.width : rect.height;
+
+      const onMouseMove = (e: MouseEvent) => {
+        const pos = isHorizontal
+          ? e.clientX - rect.left
+          : e.clientY - rect.top;
+
+        setSizes((prev) => {
+          const newSizes = [...prev];
+          // Calculate cumulative size up to divider
+          let cumBefore = 0;
+          for (let i = 0; i <= dividerIndex; i++) cumBefore += prev[i];
+
+          const ratio = pos / totalSize;
+          const diff = ratio - cumBefore;
+
+          // Adjust the two adjacent panes
+          const minSize = 0.1; // minimum 10%
+          newSizes[dividerIndex] = Math.max(minSize, prev[dividerIndex] + diff);
+          newSizes[dividerIndex + 1] = Math.max(minSize, prev[dividerIndex + 1] - diff);
+
+          // Normalize
+          const total = newSizes.reduce((a, b) => a + b, 0);
+          return newSizes.map((s) => s / total);
+        });
+      };
+
+      const onMouseUp = () => {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+      };
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = isHorizontal ? 'col-resize' : 'row-resize';
+      document.body.style.userSelect = 'none';
+    },
+    [isHorizontal]
+  );
+
+  return (
+    <div
+      ref={containerRef}
+      className={`split-container split-container--${direction}`}
+    >
+      {childNodes.map((child, index) => (
+        <div key={getNodeKey(child, index)} style={{ display: 'contents' }}>
+          {index > 0 && (
+            <div
+              className={`split-divider split-divider--${direction}`}
+              onMouseDown={(e) => handleDividerMouseDown(index - 1, e)}
+            />
+          )}
+          <div
+            className="split-pane"
+            style={{
+              flex: `${sizes[index]} 1 0%`,
+            }}
+          >
+            <SplitView node={child} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function SplitTerminal({ sessionId }: { sessionId: string }) {
@@ -48,7 +132,7 @@ function SplitTerminal({ sessionId }: { sessionId: string }) {
   return (
     <div
       className={`split-leaf ${isActive ? 'split-leaf--active' : ''}`}
-      onClick={() => setActiveSession(sessionId)}
+      onMouseDown={() => setActiveSession(sessionId)}
     >
       <div className="split-leaf__header">
         <span className="split-leaf__name">
@@ -72,9 +156,6 @@ function getNodeKey(node: LayoutNode, index: number): string {
   return `split-${index}`;
 }
 
-/**
- * Collect all session IDs from a layout tree.
- */
 export function collectSessionIds(node: LayoutNode | null): string[] {
   if (!node) return [];
   if (node.type === 'terminal' && node.sessionId) return [node.sessionId];
