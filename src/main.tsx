@@ -50,6 +50,8 @@ if (import.meta.env.DEV) {
         if (prevActive) {
           useLayoutStore.getState().splitActive('horizontal', id, prevActive);
         }
+        // Trigger resize on all terminals after layout settles
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 500);
         break;
       }
       case 'split.vertical': {
@@ -58,6 +60,7 @@ if (import.meta.env.DEV) {
         if (prevActive) {
           useLayoutStore.getState().splitActive('vertical', id, prevActive);
         }
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 500);
         break;
       }
       case 'split.reset':

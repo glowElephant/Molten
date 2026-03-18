@@ -10,9 +10,19 @@ ACTIVE_FILE="$STATE_DIR/active_pane"
 
 mkdir -p "$STATE_DIR"
 
+BASE_COUNT_FILE="$STATE_DIR/base_count"
+
 [ -f "$COUNTER_FILE" ] || echo "0" > "$COUNTER_FILE"
 [ -f "$ACTIVE_FILE" ] || echo "%0" > "$ACTIVE_FILE"
-[ -f "$PANE_MAP" ] || echo "%0=1" > "$PANE_MAP"
+
+# On first run, query the current session count as baseline
+if [ ! -f "$BASE_COUNT_FILE" ]; then
+  BC=$(curl -s "${MOLTEN_API}/api/session/count" 2>/dev/null | grep -o '"count":[0-9]*' | grep -o '[0-9]*' || echo "1")
+  echo "$BC" > "$BASE_COUNT_FILE"
+  echo "%0=${BC}" > "$PANE_MAP"
+else
+  [ -f "$PANE_MAP" ] || echo "%0=1" > "$PANE_MAP"
+fi
 
 # ── Helpers ──
 
@@ -42,11 +52,11 @@ register_pane() {
   echo "${pane_id}=${session_idx}" >> "$PANE_MAP"
 }
 
-# Get current session count from Molten API
-get_session_count() {
-  local resp
-  resp=$(curl -s "${MOLTEN_API}/api/session/count" 2>/dev/null)
-  echo "$resp" | grep -o '"count":[0-9]*' | grep -o '[0-9]*' || echo "1"
+# Get next session index: base_count + shim_created_count + 1
+next_session_index() {
+  local base=$(cat "$BASE_COUNT_FILE" 2>/dev/null || echo 1)
+  local created=$(cat "$COUNTER_FILE" 2>/dev/null || echo 0)
+  echo $((base + created + 1))
 }
 
 urlencode() {
@@ -101,11 +111,9 @@ case "$CMD" in
   has-session) exit 0 ;;
 
   new-session)
-    # Get current count BEFORE creating
-    COUNT=$(get_session_count)
+    NEW_IDX=$(next_session_index)
     api "session/create" > /dev/null
-    sleep 0.3
-    NEW_IDX=$((COUNT + 1))
+    sleep 0.5
     PANE_ID=$(next_pane_id)
     register_pane "$PANE_ID" "$NEW_IDX"
     echo "$PANE_ID" > "$ACTIVE_FILE"
@@ -113,10 +121,9 @@ case "$CMD" in
     ;;
 
   new-window)
-    COUNT=$(get_session_count)
+    NEW_IDX=$(next_session_index)
     api "session/create" > /dev/null
-    sleep 0.3
-    NEW_IDX=$((COUNT + 1))
+    sleep 0.5
     PANE_ID=$(next_pane_id)
     register_pane "$PANE_ID" "$NEW_IDX"
     has_flag "-P" && echo "$PANE_ID"
@@ -127,10 +134,9 @@ case "$CMD" in
     has_flag "-v" && DIR="vertical"
     has_flag "-h" && DIR="horizontal"
 
-    COUNT=$(get_session_count)
+    NEW_IDX=$(next_session_index)
     api "split/$DIR" > /dev/null
-    sleep 0.3
-    NEW_IDX=$((COUNT + 1))
+    sleep 0.5
     PANE_ID=$(next_pane_id)
     register_pane "$PANE_ID" "$NEW_IDX"
     has_flag "-P" && echo "$PANE_ID"
