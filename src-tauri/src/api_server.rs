@@ -174,6 +174,16 @@ fn route(handle: &tauri::AppHandle, queue: &Arc<CommandQueue>, path: &str) -> (&
             ("200 OK", format!(r#"{{"success":true,"action":"session.type","text":"ok"}}"#))
         }
 
+        // /api/session/count — return number of sessions
+        "/api/session/count" => {
+            eval_js(handle, "document.title = String(window.__moltenSessionCount?.() ?? 0)");
+            // Quick hack: count from the eval isn't easily retrievable
+            // Instead, use the PtyState to count
+            let pty_state = handle.state::<crate::commands::PtyState>();
+            let count = pty_state.0.session_count();
+            ("200 OK", format!(r#"{{"count":{}}}"#, count))
+        }
+
         _ => ("404 Not Found", format!(r#"{{"error":"Unknown: {}"}}"#, path)),
     }
 }

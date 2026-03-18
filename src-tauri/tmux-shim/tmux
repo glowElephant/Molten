@@ -1,26 +1,20 @@
 #!/bin/bash
 # Molten tmux shim — intercepts tmux commands from Claude Code
 # and translates them to Molten API calls.
-#
-# Pane ID mapping: %N → Nth session in Molten (0-based)
-# State tracked in /tmp/molten-tmux/
 
 MOLTEN_API="http://127.0.0.1:9900"
 STATE_DIR="${TMPDIR:-/tmp}/molten-tmux"
-PANES_FILE="$STATE_DIR/panes.list"
+PANE_MAP="$STATE_DIR/pane_map"       # pane_id=session_index
 COUNTER_FILE="$STATE_DIR/pane_counter"
 ACTIVE_FILE="$STATE_DIR/active_pane"
 
 mkdir -p "$STATE_DIR"
 
-# Initialize on first run (or if counter file missing)
-if [ ! -f "$COUNTER_FILE" ]; then
-  echo "0" > "$COUNTER_FILE"
-  echo "%0" > "$PANES_FILE"
-  echo "%0" > "$ACTIVE_FILE"
-fi
+[ -f "$COUNTER_FILE" ] || echo "0" > "$COUNTER_FILE"
+[ -f "$ACTIVE_FILE" ] || echo "%0" > "$ACTIVE_FILE"
+[ -f "$PANE_MAP" ] || echo "%0=1" > "$PANE_MAP"
 
-# ── Helper functions ──
+# ── Helpers ──
 
 next_pane_id() {
   local c=$(cat "$COUNTER_FILE" 2>/dev/null || echo 0)
@@ -33,33 +27,34 @@ get_active_pane() {
   cat "$ACTIVE_FILE" 2>/dev/null || echo "%0"
 }
 
-register_pane() {
-  echo "$1" >> "$PANES_FILE"
-}
-
-# Get 1-based session index for a pane ID
+# Get absolute session index for a pane ID
 pane_to_index() {
   local pane="$1"
-  local idx=0
-  while IFS= read -r line; do
-    idx=$((idx + 1))
-    if [ "$line" = "$pane" ]; then
-      echo "$idx"
-      return
-    fi
-  done < "$PANES_FILE" 2>/dev/null
-  echo "1"
+  local idx
+  idx=$(grep "^${pane}=" "$PANE_MAP" 2>/dev/null | head -1 | cut -d= -f2)
+  echo "${idx:-1}"
 }
 
-# URL-encode without python (pure bash)
+# Register pane with its absolute session index
+register_pane() {
+  local pane_id="$1"
+  local session_idx="$2"
+  echo "${pane_id}=${session_idx}" >> "$PANE_MAP"
+}
+
+# Get current session count from Molten API
+get_session_count() {
+  local resp
+  resp=$(curl -s "${MOLTEN_API}/api/session/count" 2>/dev/null)
+  echo "$resp" | grep -o '"count":[0-9]*' | grep -o '[0-9]*' || echo "1"
+}
+
 urlencode() {
-  local str="$1"
-  local encoded=""
-  local i c
+  local str="$1" encoded="" i c
   for ((i = 0; i < ${#str}; i++)); do
     c="${str:$i:1}"
     case "$c" in
-      [a-zA-Z0-9.~_-]) encoded+="$c" ;;
+      [a-zA-Z0-9.~_/-]) encoded+="$c" ;;
       ' ') encoded+="%20" ;;
       *) encoded+=$(printf '%%%02X' "'$c") ;;
     esac
@@ -67,78 +62,63 @@ urlencode() {
   echo "$encoded"
 }
 
-api() {
-  curl -s "${MOLTEN_API}/api/$1" 2>/dev/null
-}
+api() { curl -s "${MOLTEN_API}/api/$1" 2>/dev/null; }
 
-# ── Parse global options ──
+# ── Parse args ──
 
 CMD=""
 ARGS=()
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    -L) shift 2 ;;           # ignore socket name
-    -f) shift 2 ;;           # ignore config file
+    -L) shift 2 ;;
+    -f) shift 2 ;;
     *)
-      if [ -z "$CMD" ]; then
-        CMD="$1"
-      else
-        ARGS+=("$1")
-      fi
-      shift
-      ;;
+      if [ -z "$CMD" ]; then CMD="$1"; else ARGS+=("$1"); fi
+      shift ;;
   esac
 done
 
-# ── Parse named options from ARGS ──
-# Returns value for a flag like: get_opt -t → target value
 get_opt() {
-  local flag="$1"
-  local i
+  local flag="$1" i
   for ((i = 0; i < ${#ARGS[@]}; i++)); do
-    if [ "${ARGS[$i]}" = "$flag" ]; then
-      echo "${ARGS[$((i + 1))]}"
-      return 0
-    fi
+    [ "${ARGS[$i]}" = "$flag" ] && echo "${ARGS[$((i + 1))]}" && return 0
   done
   return 1
 }
 
 has_flag() {
-  local flag="$1"
-  for arg in "${ARGS[@]}"; do
-    [ "$arg" = "$flag" ] && return 0
-  done
+  for arg in "${ARGS[@]}"; do [ "$arg" = "$1" ] && return 0; done
   return 1
 }
 
-# ── Command handlers ──
+# ── Commands ──
 
 case "$CMD" in
 
-  -V)
-    echo "tmux 3.4"
-    ;;
+  -V) echo "tmux 3.4" ;;
 
-  has-session)
-    exit 0
-    ;;
+  has-session) exit 0 ;;
 
   new-session)
+    # Get current count BEFORE creating
+    COUNT=$(get_session_count)
     api "session/create" > /dev/null
     sleep 0.3
+    NEW_IDX=$((COUNT + 1))
     PANE_ID=$(next_pane_id)
-    register_pane "$PANE_ID"
+    register_pane "$PANE_ID" "$NEW_IDX"
     echo "$PANE_ID" > "$ACTIVE_FILE"
     has_flag "-P" && echo "$PANE_ID"
     ;;
 
   new-window)
+    COUNT=$(get_session_count)
     api "session/create" > /dev/null
     sleep 0.3
+    NEW_IDX=$((COUNT + 1))
     PANE_ID=$(next_pane_id)
-    register_pane "$PANE_ID"
+    register_pane "$PANE_ID" "$NEW_IDX"
     has_flag "-P" && echo "$PANE_ID"
     ;;
 
@@ -147,17 +127,16 @@ case "$CMD" in
     has_flag "-v" && DIR="vertical"
     has_flag "-h" && DIR="horizontal"
 
-    # split API creates session + splits internally
+    COUNT=$(get_session_count)
     api "split/$DIR" > /dev/null
     sleep 0.3
-
+    NEW_IDX=$((COUNT + 1))
     PANE_ID=$(next_pane_id)
-    register_pane "$PANE_ID"
+    register_pane "$PANE_ID" "$NEW_IDX"
     has_flag "-P" && echo "$PANE_ID"
     ;;
 
   send-keys)
-    # Collect target and text
     TARGET=$(get_opt "-t")
     TEXT=""
     SEND_ENTER=false
@@ -165,37 +144,26 @@ case "$CMD" in
     for ((i = 0; i < ${#ARGS[@]}; i++)); do
       arg="${ARGS[$i]}"
       case "$arg" in
-        -t) ((i++)) ;;  # skip -t and its value
+        -t) ((i++)) ;;
         Enter) SEND_ENTER=true ;;
-        C-c|C-d|C-l) ;;  # ignore control keys
-        *)
-          # Accumulate text (might be multiple args)
-          [ -n "$TEXT" ] && TEXT+=" "
-          TEXT+="$arg"
-          ;;
+        C-c|C-d|C-l) ;;
+        *) [ -n "$TEXT" ] && TEXT+=" "; TEXT+="$arg" ;;
       esac
     done
 
     if [ -n "$TEXT" ]; then
-      # Switch to target pane's session
+      # Switch to correct session
       if [ -n "$TARGET" ]; then
-        # Extract pane ID from target (handle "session:window" format)
         TPANE=$(echo "$TARGET" | grep -o '%[0-9]*' || echo "$TARGET")
         if [ -n "$TPANE" ]; then
           IDX=$(pane_to_index "$TPANE")
           api "session/switch/$IDX" > /dev/null
-          sleep 0.1
+          sleep 0.15
         fi
       fi
 
-      # Send the text
       ENCODED=$(urlencode "$TEXT")
       api "session/type/$ENCODED" > /dev/null
-
-      # Send Enter if requested
-      if $SEND_ENTER; then
-        sleep 0.05
-      fi
     fi
     ;;
 
@@ -215,25 +183,21 @@ case "$CMD" in
     FMT=$(get_opt "-p")
     CURRENT=$(get_active_pane)
     case "$FMT" in
-      *pane_id*)           echo "$CURRENT" ;;
+      *pane_id*) echo "$CURRENT" ;;
       *session_name*window_index*) echo "molten:0" ;;
-      *session_name*)      echo "molten" ;;
-      *window_index*)      echo "0" ;;
-      *)                   echo "$CURRENT" ;;
+      *session_name*) echo "molten" ;;
+      *window_index*) echo "0" ;;
+      *) echo "$CURRENT" ;;
     esac
     ;;
 
   list-panes)
-    cat "$PANES_FILE" 2>/dev/null || echo "%0"
+    cut -d= -f1 "$PANE_MAP" 2>/dev/null || echo "%0"
     ;;
 
-  list-windows)
-    echo "swarm-view"
-    ;;
+  list-windows) echo "swarm-view" ;;
 
-  list-sessions)
-    echo "molten: 1 windows (created $(date))"
-    ;;
+  list-sessions) echo "molten: 1 windows (created $(date))" ;;
 
   kill-pane)
     TARGET=$(get_opt "-t")
@@ -243,39 +207,18 @@ case "$CMD" in
       api "session/switch/$IDX" > /dev/null
       sleep 0.1
       api "session/close" > /dev/null
-      # Remove from panes list
-      grep -v "^${TPANE}$" "$PANES_FILE" > "$PANES_FILE.tmp" 2>/dev/null
-      mv "$PANES_FILE.tmp" "$PANES_FILE" 2>/dev/null
+      grep -v "^${TPANE}=" "$PANE_MAP" > "$PANE_MAP.tmp" 2>/dev/null
+      mv "$PANE_MAP.tmp" "$PANE_MAP" 2>/dev/null
     fi
     ;;
 
-  kill-session|kill-server)
-    # Don't kill the app
-    ;;
-
-  set-option|set)
-    # Visual styling — ignore
-    ;;
-
-  select-layout)
-    # Layout — ignore (Molten handles its own layout)
-    ;;
-
-  resize-pane)
-    # Resize — ignore
-    ;;
-
-  break-pane|join-pane)
-    # Hide/show — ignore
-    ;;
-
-  load-buffer)
-    # Clipboard — ignore
-    ;;
-
-  *)
-    # Unknown — silently succeed
-    ;;
+  kill-session|kill-server) ;;
+  set-option|set) ;;
+  select-layout) ;;
+  resize-pane) ;;
+  break-pane|join-pane) ;;
+  load-buffer) ;;
+  *) ;;
 
 esac
 
