@@ -89,6 +89,23 @@ impl PtyManager {
         cmd.env("LANG", "C.UTF-8");
         cmd.env("LC_ALL", "C.UTF-8");
 
+        // tmux shim: prepend tmux-shim to PATH so Claude Code thinks it's in tmux
+        let exe_dir = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|d| d.to_path_buf()));
+        if let Some(dir) = &exe_dir {
+            let shim_dir = dir.join("../tmux-shim");
+            // Also check development path
+            let dev_shim = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tmux-shim");
+            let shim_path = if dev_shim.exists() { dev_shim } else { shim_dir };
+            if shim_path.exists() {
+                let current_path = std::env::var("PATH").unwrap_or_default();
+                cmd.env("PATH", format!("{};{}", shim_path.display(), current_path));
+            }
+        }
+        // Fake TMUX env var so Claude Code detects tmux
+        cmd.env("TMUX", "/tmp/molten-tmux/molten,0,0");
+
         if let Some(env) = &config.env {
             for (key, value) in env {
                 cmd.env(key, value);
