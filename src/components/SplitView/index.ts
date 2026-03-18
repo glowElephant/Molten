@@ -1,1 +1,1 @@
-export { SplitView } from './SplitView';
+export { SplitView, collectSessionIds } from './SplitView';

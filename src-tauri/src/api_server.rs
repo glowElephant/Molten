@@ -105,6 +105,24 @@ fn route(handle: &tauri::AppHandle, queue: &Arc<CommandQueue>, path: &str) -> (&
             ("200 OK", format!(r#"{{"success":true,"action":"session.switch","index":{}}}"#, idx))
         }
 
+        // /api/split/horizontal — split active session horizontally (left/right)
+        "/api/split/horizontal" => {
+            eval_js(handle, "window.__moltenExec('split.horizontal')");
+            ("200 OK", r#"{"success":true,"action":"split.horizontal"}"#.to_string())
+        }
+
+        // /api/split/vertical — split active session vertically (top/bottom)
+        "/api/split/vertical" => {
+            eval_js(handle, "window.__moltenExec('split.vertical')");
+            ("200 OK", r#"{"success":true,"action":"split.vertical"}"#.to_string())
+        }
+
+        // /api/split/reset — exit split mode
+        "/api/split/reset" => {
+            eval_js(handle, "window.__moltenExec('split.reset')");
+            ("200 OK", r#"{"success":true,"action":"split.reset"}"#.to_string())
+        }
+
         // /api/session/close — close active session
         "/api/session/close" => {
             eval_js(handle, "window.__moltenExec('session.close')");

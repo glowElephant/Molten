@@ -14,7 +14,7 @@ interface LayoutStore {
   layout: LayoutNode | null;
 
   setLayout: (layout: LayoutNode | null) => void;
-  splitActive: (direction: SplitDirection, newSessionId: string) => void;
+  splitActive: (direction: SplitDirection, newSessionId: string, targetSessionId?: string | null) => void;
   removeFromLayout: (sessionId: string) => void;
   setSingleSession: (sessionId: string) => void;
 }
@@ -28,20 +28,20 @@ export const useLayoutStore = create<LayoutStore>((set, get) => ({
     set({ layout: { type: 'terminal', sessionId } });
   },
 
-  splitActive: (direction: SplitDirection, newSessionId: string) => {
+  splitActive: (direction: SplitDirection, newSessionId: string, targetSessionId?: string | null) => {
     const { layout } = get();
     if (!layout) {
       set({ layout: { type: 'terminal', sessionId: newSessionId } });
       return;
     }
 
-    const activeSessionId = useSessionStore.getState().activeSessionId;
-    if (!activeSessionId) {
+    const activeId = targetSessionId || useSessionStore.getState().activeSessionId;
+    if (!activeId) {
       set({ layout: { type: 'terminal', sessionId: newSessionId } });
       return;
     }
 
-    const newLayout = addToSplit(layout, activeSessionId, direction, newSessionId);
+    const newLayout = addToSplit(layout, activeId, direction, newSessionId);
     set({ layout: newLayout });
   },
 

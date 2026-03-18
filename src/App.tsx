@@ -3,14 +3,16 @@ import { TitleBar } from './components/TitleBar';
 import { Sidebar } from './components/Sidebar';
 import { StatusBar } from './components/StatusBar';
 import { TerminalPanel } from './components/Terminal';
+import { SplitView } from './components/SplitView';
 import { NotificationPanel } from './components/Notification';
 import { SettingsModal } from './components/Settings';
 import { CommandPalette } from './components/CommandPalette';
 import { useSettingsStore } from './stores/settingsStore';
 import { useSessionStore } from './stores/sessionStore';
 import { useNotificationStore } from './stores/notificationStore';
+import { useLayoutStore } from './stores/layoutStore';
 import { useSessionNotifications } from './hooks/useSessionNotifications';
-import './utils/selfCapture'; // Register global capture function
+import './utils/selfCapture';
 import './App.css';
 
 function App() {
@@ -20,6 +22,7 @@ function App() {
   const { sidebar, titleBar } = settings;
   const { sessions, activeSessionId, createSession } = useSessionStore();
   const { togglePanel: toggleNotifications } = useNotificationStore();
+  const { layout } = useLayoutStore();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [paletteVisible, setPaletteVisible] = useState(false);
 
@@ -28,6 +31,44 @@ function App() {
       if (e.ctrlKey && !e.shiftKey && e.key === 'n') {
         e.preventDefault();
         createSession();
+        // Exit split mode on Ctrl+N
+        useLayoutStore.getState().setLayout(null);
+      }
+      if (e.ctrlKey && !e.shiftKey && e.key === 'd') {
+        e.preventDefault();
+        const prevActive = useSessionStore.getState().activeSessionId;
+        const id = useSessionStore.getState().createSession();
+        const currentLayout = useLayoutStore.getState().layout;
+        if (!currentLayout && prevActive) {
+          useLayoutStore.getState().setLayout({
+            type: 'split',
+            direction: 'horizontal',
+            children: [
+              { type: 'terminal', sessionId: prevActive },
+              { type: 'terminal', sessionId: id },
+            ],
+          });
+        } else if (currentLayout && prevActive) {
+          useLayoutStore.getState().splitActive('horizontal', id, prevActive);
+        }
+      }
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        e.preventDefault();
+        const prevActive = useSessionStore.getState().activeSessionId;
+        const id = useSessionStore.getState().createSession();
+        const currentLayout = useLayoutStore.getState().layout;
+        if (!currentLayout && prevActive) {
+          useLayoutStore.getState().setLayout({
+            type: 'split',
+            direction: 'vertical',
+            children: [
+              { type: 'terminal', sessionId: prevActive },
+              { type: 'terminal', sessionId: id },
+            ],
+          });
+        } else if (currentLayout && prevActive) {
+          useLayoutStore.getState().splitActive('vertical', id, prevActive);
+        }
       }
       if (e.ctrlKey && e.key === 'b') {
         e.preventDefault();
@@ -50,7 +91,10 @@ function App() {
       if (e.ctrlKey && e.key === 'w') {
         e.preventDefault();
         const state = useSessionStore.getState();
-        if (state.activeSessionId) state.closeSession(state.activeSessionId);
+        if (state.activeSessionId) {
+          useLayoutStore.getState().removeFromLayout(state.activeSessionId);
+          state.closeSession(state.activeSessionId);
+        }
       }
       if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
         e.preventDefault();
@@ -78,6 +122,7 @@ function App() {
 
   const sessionList = Array.from(sessions.values());
   const hasAnySessions = sessionList.length > 0;
+  const isSplitMode = layout !== null && layout.type === 'split';
 
   return (
     <div className="app" data-theme={settings.theme}>
@@ -88,21 +133,25 @@ function App() {
         {sidebar.position === 'left' && <Sidebar />}
 
         <main className="app__content">
-          {sessionList.map((session) => (
-            <div
-              key={session.id}
-              className="app__terminal-wrapper"
-              style={{
-                display: session.id === activeSessionId ? 'flex' : 'none',
-                flex: 1,
-                minHeight: 0,
-              }}
-            >
-              <TerminalPanel sessionId={session.id} />
-            </div>
-          ))}
-
-          {!hasAnySessions && (
+          {isSplitMode ? (
+            // Split mode: render split view
+            <SplitView node={layout} />
+          ) : hasAnySessions ? (
+            // Single mode: show active session
+            sessionList.map((session) => (
+              <div
+                key={session.id}
+                className="app__terminal-wrapper"
+                style={{
+                  display: session.id === activeSessionId ? 'flex' : 'none',
+                  flex: 1,
+                  minHeight: 0,
+                }}
+              >
+                <TerminalPanel sessionId={session.id} />
+              </div>
+            ))
+          ) : (
             <div className="app__placeholder">
               <div className="app__placeholder-logo">◆</div>
               <h1 className="app__placeholder-title">Molten</h1>
