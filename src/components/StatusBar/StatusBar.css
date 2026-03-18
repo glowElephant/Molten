@@ -60,6 +60,56 @@
   color: var(--color-accent, #7c3aed);
 }
 
+/* Keybinding hints */
+.statusbar__hints {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.statusbar__hint {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--color-text-muted, #475569);
+  white-space: nowrap;
+}
+
+.statusbar__hint kbd {
+  font-family: inherit;
+  font-size: 9px;
+  padding: 0 3px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.statusbar__hints-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted, #475569);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.statusbar__hints-toggle:hover {
+  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.statusbar__hints-toggle--active {
+  color: var(--color-accent, #7c3aed);
+}
+
 .statusbar__badge {
   position: absolute;
   top: -2px;

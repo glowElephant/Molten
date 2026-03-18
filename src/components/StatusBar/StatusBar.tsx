@@ -1,15 +1,38 @@
-import { Bell } from 'lucide-react';
+import { useState } from 'react';
+import { Bell, Keyboard } from 'lucide-react';
 import { useSessionStore } from '../../stores/sessionStore';
 import { useNotificationStore } from '../../stores/notificationStore';
+import { useLayoutStore } from '../../stores/layoutStore';
 import { getStatusLabel } from '../../utils/statusDetector';
 import './StatusBar.css';
+
+const HINTS_BASE = [
+  { key: 'Ctrl+N', label: 'New' },
+  { key: 'Ctrl+D', label: 'Split' },
+  { key: 'Ctrl+W', label: 'Close' },
+  { key: 'Ctrl+B', label: 'Sidebar' },
+  { key: 'Ctrl+P', label: 'Palette' },
+  { key: 'Ctrl+,', label: 'Settings' },
+];
 
 export function StatusBar() {
   const { sessions, activeSessionId } = useSessionStore();
   const { unreadCount, togglePanel } = useNotificationStore();
+  const { groups } = useLayoutStore();
+  const [showHints, setShowHints] = useState(true);
 
   const activeSession = activeSessionId ? sessions.get(activeSessionId) : null;
   const sessionCount = sessions.size;
+  const hasSplit = groups.length > 0;
+
+  // Build contextual hints
+  const hints = [...HINTS_BASE];
+  if (hasSplit) {
+    hints.push({ key: 'Ctrl+Shift+D', label: 'V-Split' });
+  }
+  if (sessionCount > 1) {
+    hints.push({ key: 'Ctrl+Tab', label: 'Next' });
+  }
 
   return (
     <div className="statusbar">
@@ -44,7 +67,25 @@ export function StatusBar() {
         )}
       </div>
 
+      {showHints && (
+        <div className="statusbar__hints">
+          {hints.map((h) => (
+            <span key={h.key} className="statusbar__hint">
+              <kbd>{h.key}</kbd> {h.label}
+            </span>
+          ))}
+        </div>
+      )}
+
       <div className="statusbar__right">
+        <button
+          className={`statusbar__hints-toggle ${showHints ? 'statusbar__hints-toggle--active' : ''}`}
+          onClick={() => setShowHints(!showHints)}
+          title="Toggle keybinding hints"
+        >
+          <Keyboard size={11} />
+        </button>
+
         <span className="statusbar__item statusbar__item--muted">
           {sessionCount} session{sessionCount !== 1 ? 's' : ''}
         </span>
