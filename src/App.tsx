@@ -37,8 +37,7 @@ function App() {
       if (e.ctrlKey && !e.shiftKey && e.key === 'n') {
         e.preventDefault();
         createSession();
-        // Exit split mode on Ctrl+N
-        useLayoutStore.getState().setLayout(null);
+        // Layout preserved — new session appears on top as standalone
       }
       if (e.ctrlKey && !e.shiftKey && e.key === 'd') {
         e.preventDefault();

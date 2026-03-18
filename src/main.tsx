@@ -15,7 +15,6 @@ if (import.meta.env.DEV) {
     switch (action) {
       case 'session.create':
         useSessionStore.getState().createSession();
-        useLayoutStore.getState().setLayout(null); // Exit split mode
         break;
       case 'sidebar.toggle': {
         const s = useSettingsStore.getState();
