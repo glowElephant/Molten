@@ -1,5 +1,4 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { TerminalPanel } from '../Terminal';
 import { useSessionStore } from '../../stores/sessionStore';
@@ -108,33 +107,24 @@ function SplitContainer({
     >
       {/* Overlay to prevent xterm from stealing mouse events during drag */}
       {isDragging && <div className="split-drag-overlay" />}
-      <AnimatePresence>
-        {childNodes.map((child, index) => (
-          <motion.div
-            key={getNodeKey(child, index)}
-            style={{ display: 'contents' }}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-          >
-            {index > 0 && (
-              <div
-                className={`split-divider split-divider--${direction}`}
-                onMouseDown={(e) => handleDividerMouseDown(index - 1, e)}
-              />
-            )}
+      {childNodes.map((child, index) => (
+        <div key={getNodeKey(child, index)} style={{ display: 'contents' }}>
+          {index > 0 && (
             <div
-              className="split-pane"
-              style={{
-                flex: `${sizes[index]} 1 0%`,
-              }}
-            >
-              <SplitView node={child} />
-            </div>
-          </motion.div>
-        ))}
-      </AnimatePresence>
+              className={`split-divider split-divider--${direction}`}
+              onMouseDown={(e) => handleDividerMouseDown(index - 1, e)}
+            />
+          )}
+          <div
+            className="split-pane"
+            style={{
+              flex: `${sizes[index]} 1 0%`,
+            }}
+          >
+            <SplitView node={child} />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
