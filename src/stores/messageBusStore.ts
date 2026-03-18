@@ -5,9 +5,11 @@ import type { InterSessionMessage } from '../types';
 const MAX_HISTORY = 200;
 const MAX_OUTPUT_BUFFER = 2048;
 
+// Output buffer stored outside Zustand to avoid re-renders on every PTY output
+const outputBuffers = new Map<string, string>();
+
 interface MessageBusStore {
   messages: InterSessionMessage[];
-  lastOutputBySession: Map<string, string>;
 
   sendToSession: (fromId: string, toId: string, content: string) => void;
   broadcast: (fromId: string, content: string) => void;
@@ -39,9 +41,8 @@ function generateMsgId(): string {
   return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export const useMessageBusStore = create<MessageBusStore>((set, get) => ({
+export const useMessageBusStore = create<MessageBusStore>((set) => ({
   messages: [],
-  lastOutputBySession: new Map(),
 
   sendToSession: (fromId: string, toId: string, content: string) => {
     const msg: InterSessionMessage = {
@@ -73,30 +74,21 @@ export const useMessageBusStore = create<MessageBusStore>((set, get) => ({
 
   recordOutput: (sessionId: string, chunk: string) => {
     const clean = stripAnsi(chunk);
-    if (!clean) return; // skip empty after stripping
-    const current = get().lastOutputBySession.get(sessionId) || '';
-    const updated = (current + clean).slice(-MAX_OUTPUT_BUFFER);
-    set((state) => {
-      const newMap = new Map(state.lastOutputBySession);
-      newMap.set(sessionId, updated);
-      return { lastOutputBySession: newMap };
-    });
+    if (!clean) return;
+    const current = outputBuffers.get(sessionId) || '';
+    outputBuffers.set(sessionId, (current + clean).slice(-MAX_OUTPUT_BUFFER));
   },
 
   clearOutputBuffer: (sessionId: string) => {
-    set((state) => {
-      const newMap = new Map(state.lastOutputBySession);
-      newMap.set(sessionId, '');
-      return { lastOutputBySession: newMap };
-    });
+    outputBuffers.set(sessionId, '');
   },
 
   getLastOutput: (sessionId: string) => {
-    const raw = get().lastOutputBySession.get(sessionId) || '';
-    return stripAnsi(raw);
+    return outputBuffers.get(sessionId) || '';
   },
 
   clearHistory: () => {
-    set({ messages: [], lastOutputBySession: new Map() });
+    set({ messages: [] });
+    outputBuffers.clear();
   },
 }));
