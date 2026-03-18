@@ -100,7 +100,9 @@ impl PtyManager {
             let shim_path = if dev_shim.exists() { dev_shim } else { shim_dir };
             if shim_path.exists() {
                 let current_path = std::env::var("PATH").unwrap_or_default();
-                cmd.env("PATH", format!("{};{}", shim_path.display(), current_path));
+                // Use : separator for MSYS2/Git Bash PATH
+                let shim_str = shim_path.to_string_lossy().replace('\\', "/");
+                cmd.env("PATH", format!("{}:{}", shim_str, current_path));
             }
         }
         // Fake TMUX env var so Claude Code detects tmux
