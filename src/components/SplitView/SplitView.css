@@ -70,7 +70,7 @@
   justify-content: space-between;
   height: 24px;
   padding: 0 8px;
-  background: rgba(15, 15, 25, 0.9);
+  background: var(--color-bg-panel, rgba(15, 15, 25, 0.9));
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   flex-shrink: 0;
   user-select: none;

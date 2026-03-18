@@ -14,7 +14,7 @@ interface SettingsModalProps {
 type SettingsTab = 'general' | 'terminal' | 'notifications' | 'appearance' | 'triggers';
 
 export function SettingsModal({ visible, onClose }: SettingsModalProps) {
-  const { settings, updateNestedSetting, resetSettings } = useSettingsStore();
+  const { settings, updateSetting, updateNestedSetting, resetSettings } = useSettingsStore();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
   if (!visible) return null;
@@ -209,6 +209,27 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
 
             {activeTab === 'appearance' && (
               <div className="settings-section">
+                <h3>Theme</h3>
+                <SettingRow label="Color scheme">
+                  <select
+                    value={settings.theme}
+                    onChange={(e) => updateSetting('theme', e.target.value)}
+                  >
+                    <option value="obsidian">Obsidian</option>
+                    <option value="dracula">Dracula</option>
+                    <option value="nord">Nord</option>
+                    <option value="monokai">Monokai</option>
+                    <option value="cyberpunk">Cyberpunk</option>
+                    <option value="catppuccin">Catppuccin</option>
+                    <option value="solarized">Solarized Dark</option>
+                    <option value="midnight">Midnight Blue</option>
+                    <option value="matrix">Matrix</option>
+                    <option value="sunset">Sunset</option>
+                    <option value="arctic">Arctic</option>
+                    <option value="ember">Ember</option>
+                  </select>
+                </SettingRow>
+
                 <h3>Animations</h3>
                 <SettingRow label="Enable animations">
                   <ToggleSwitch

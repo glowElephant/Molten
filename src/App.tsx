@@ -17,6 +17,7 @@ import { useSettingsPersistence } from './hooks/useSettingsPersistence';
 import { useWorkspacePersistence } from './hooks/useWorkspacePersistence';
 import { initTriggerEngine } from './utils/triggerEngine';
 import './utils/selfCapture';
+import './themes.css';
 import './App.css';
 
 function App() {

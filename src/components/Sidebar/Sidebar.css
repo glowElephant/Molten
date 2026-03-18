@@ -1,7 +1,7 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  background: rgba(15, 15, 25, 0.95);
+  background: var(--color-bg-panel, rgba(15, 15, 25, 0.95));
   backdrop-filter: blur(12px);
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   overflow: hidden;

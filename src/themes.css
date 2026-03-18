@@ -1,0 +1,221 @@
+/* ============================================
+   Molten Themes — Color schemes + textures
+   ============================================ */
+
+/* ── Obsidian (Default) ── */
+[data-theme="obsidian"] {
+  --color-bg: #0a0a0f;
+  --color-bg-panel: rgba(26, 26, 46, 0.8);
+  --color-bg-panel-solid: #1a1a2e;
+  --color-accent: #7c3aed;
+  --color-accent-secondary: #06b6d4;
+  --color-text-primary: #e2e8f0;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #475569;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(255, 255, 255, 0.15);
+  --theme-bg-texture:
+    radial-gradient(ellipse at 20% 50%, rgba(124, 58, 237, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(6, 182, 212, 0.04) 0%, transparent 50%);
+}
+
+/* ── Dracula ── */
+[data-theme="dracula"] {
+  --color-bg: #282a36;
+  --color-bg-panel: rgba(40, 42, 54, 0.9);
+  --color-bg-panel-solid: #44475a;
+  --color-accent: #bd93f9;
+  --color-accent-secondary: #50fa7b;
+  --color-text-primary: #f8f8f2;
+  --color-text-secondary: #bfbfbf;
+  --color-text-muted: #6272a4;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(189, 147, 249, 0.3);
+  --theme-bg-texture:
+    radial-gradient(ellipse at 30% 70%, rgba(189, 147, 249, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 30%, rgba(80, 250, 123, 0.03) 0%, transparent 50%);
+}
+
+/* ── Nord ── */
+[data-theme="nord"] {
+  --color-bg: #2e3440;
+  --color-bg-panel: rgba(46, 52, 64, 0.9);
+  --color-bg-panel-solid: #3b4252;
+  --color-accent: #88c0d0;
+  --color-accent-secondary: #81a1c1;
+  --color-text-primary: #eceff4;
+  --color-text-secondary: #d8dee9;
+  --color-text-muted: #4c566a;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border-hover: rgba(136, 192, 208, 0.3);
+  --theme-bg-texture:
+    radial-gradient(ellipse at 50% 0%, rgba(136, 192, 208, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 100%, rgba(129, 161, 193, 0.03) 0%, transparent 60%);
+}
+
+/* ── Monokai ── */
+[data-theme="monokai"] {
+  --color-bg: #272822;
+  --color-bg-panel: rgba(39, 40, 34, 0.9);
+  --color-bg-panel-solid: #3e3d32;
+  --color-accent: #f92672;
+  --color-accent-secondary: #a6e22e;
+  --color-text-primary: #f8f8f2;
+  --color-text-secondary: #cfcfc2;
+  --color-text-muted: #75715e;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border-hover: rgba(249, 38, 114, 0.3);
+  --theme-bg-texture:
+    radial-gradient(ellipse at 10% 90%, rgba(249, 38, 114, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 90% 10%, rgba(166, 226, 46, 0.03) 0%, transparent 50%);
+}
+
+/* ── Cyberpunk ── */
+[data-theme="cyberpunk"] {
+  --color-bg: #0d0221;
+  --color-bg-panel: rgba(13, 2, 33, 0.9);
+  --color-bg-panel-solid: #1a0a3e;
+  --color-accent: #ff2a6d;
+  --color-accent-secondary: #05d9e8;
+  --color-text-primary: #d1f7ff;
+  --color-text-secondary: #7b8794;
+  --color-text-muted: #3a2e5c;
+  --color-border: rgba(5, 217, 232, 0.15);
+  --color-border-hover: rgba(255, 42, 109, 0.4);
+  --theme-bg-texture:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(5, 217, 232, 0.015) 2px,
+      rgba(5, 217, 232, 0.015) 4px
+    ),
+    radial-gradient(ellipse at 50% 50%, rgba(255, 42, 109, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse at 0% 100%, rgba(5, 217, 232, 0.08) 0%, transparent 50%);
+}
+
+/* ── Catppuccin Mocha ── */
+[data-theme="catppuccin"] {
+  --color-bg: #1e1e2e;
+  --color-bg-panel: rgba(30, 30, 46, 0.9);
+  --color-bg-panel-solid: #313244;
+  --color-accent: #cba6f7;
+  --color-accent-secondary: #f5c2e7;
+  --color-text-primary: #cdd6f4;
+  --color-text-secondary: #a6adc8;
+  --color-text-muted: #585b70;
+  --color-border: rgba(205, 214, 244, 0.06);
+  --color-border-hover: rgba(203, 166, 247, 0.3);
+  --theme-bg-texture:
+    radial-gradient(ellipse at 25% 25%, rgba(203, 166, 247, 0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 75% 75%, rgba(245, 194, 231, 0.03) 0%, transparent 50%);
+}
+
+/* ── Solarized Dark ── */
+[data-theme="solarized"] {
+  --color-bg: #002b36;
+  --color-bg-panel: rgba(0, 43, 54, 0.9);
+  --color-bg-panel-solid: #073642;
+  --color-accent: #268bd2;
+  --color-accent-secondary: #2aa198;
+  --color-text-primary: #fdf6e3;
+  --color-text-secondary: #93a1a1;
+  --color-text-muted: #586e75;
+  --color-border: rgba(253, 246, 227, 0.06);
+  --color-border-hover: rgba(38, 139, 210, 0.3);
+  --theme-bg-texture:
+    radial-gradient(ellipse at 50% 50%, rgba(38, 139, 210, 0.03) 0%, transparent 60%);
+}
+
+/* ── Midnight ── */
+[data-theme="midnight"] {
+  --color-bg: #0f172a;
+  --color-bg-panel: rgba(15, 23, 42, 0.9);
+  --color-bg-panel-solid: #1e293b;
+  --color-accent: #3b82f6;
+  --color-accent-secondary: #06b6d4;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #475569;
+  --color-border: rgba(255, 255, 255, 0.06);
+  --color-border-hover: rgba(59, 130, 246, 0.3);
+  --theme-bg-texture:
+    radial-gradient(ellipse at 20% 80%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(6, 182, 212, 0.04) 0%, transparent 50%);
+}
+
+/* ── Matrix ── */
+[data-theme="matrix"] {
+  --color-bg: #0a0a0a;
+  --color-bg-panel: rgba(10, 10, 10, 0.95);
+  --color-bg-panel-solid: #111111;
+  --color-accent: #00ff41;
+  --color-accent-secondary: #008f11;
+  --color-text-primary: #00ff41;
+  --color-text-secondary: #00cc33;
+  --color-text-muted: #004400;
+  --color-border: rgba(0, 255, 65, 0.1);
+  --color-border-hover: rgba(0, 255, 65, 0.3);
+  --theme-bg-texture:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 1px,
+      rgba(0, 255, 65, 0.008) 1px,
+      rgba(0, 255, 65, 0.008) 2px
+    ),
+    radial-gradient(ellipse at 50% 50%, rgba(0, 255, 65, 0.03) 0%, transparent 70%);
+}
+
+/* ── Sunset ── */
+[data-theme="sunset"] {
+  --color-bg: #1a1020;
+  --color-bg-panel: rgba(26, 16, 32, 0.9);
+  --color-bg-panel-solid: #2a1a3a;
+  --color-accent: #f97316;
+  --color-accent-secondary: #ec4899;
+  --color-text-primary: #fef3c7;
+  --color-text-secondary: #d4a88c;
+  --color-text-muted: #6b4c3b;
+  --color-border: rgba(249, 115, 22, 0.1);
+  --color-border-hover: rgba(249, 115, 22, 0.3);
+  --theme-bg-texture:
+    radial-gradient(ellipse at 0% 100%, rgba(249, 115, 22, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 0%, rgba(236, 72, 153, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.04) 0%, transparent 60%);
+}
+
+/* ── Arctic ── */
+[data-theme="arctic"] {
+  --color-bg: #0c1929;
+  --color-bg-panel: rgba(12, 25, 41, 0.9);
+  --color-bg-panel-solid: #132f4c;
+  --color-accent: #5ce1e6;
+  --color-accent-secondary: #7dd3fc;
+  --color-text-primary: #e0f2fe;
+  --color-text-secondary: #7dd3fc;
+  --color-text-muted: #1e5f8a;
+  --color-border: rgba(92, 225, 230, 0.08);
+  --color-border-hover: rgba(92, 225, 230, 0.25);
+  --theme-bg-texture:
+    radial-gradient(ellipse at 30% 0%, rgba(92, 225, 230, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 100%, rgba(125, 211, 252, 0.04) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0L60 30L30 60L0 30Z' fill='none' stroke='rgba(92,225,230,0.03)' stroke-width='0.5'/%3E%3C/svg%3E");
+}
+
+/* ── Ember ── */
+[data-theme="ember"] {
+  --color-bg: #1c0c0c;
+  --color-bg-panel: rgba(28, 12, 12, 0.9);
+  --color-bg-panel-solid: #2d1616;
+  --color-accent: #ef4444;
+  --color-accent-secondary: #f97316;
+  --color-text-primary: #fef2f2;
+  --color-text-secondary: #fca5a5;
+  --color-text-muted: #7f1d1d;
+  --color-border: rgba(239, 68, 68, 0.1);
+  --color-border-hover: rgba(239, 68, 68, 0.3);
+  --theme-bg-texture:
+    radial-gradient(ellipse at 50% 100%, rgba(239, 68, 68, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 30%, rgba(249, 115, 22, 0.04) 0%, transparent 50%);
+}
