@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { TerminalPanel } from '../Terminal';
 import { useSessionStore } from '../../stores/sessionStore';
@@ -40,6 +40,11 @@ function SplitContainer({
     Array(count).fill(1 / count)
   );
   const [isDragging, setIsDragging] = useState(false);
+
+  // Reset sizes when child count changes (e.g. session closed)
+  useEffect(() => {
+    setSizes(Array(count).fill(1 / count));
+  }, [count]);
   const isHorizontal = direction === 'horizontal';
 
   const handleDividerMouseDown = useCallback(
