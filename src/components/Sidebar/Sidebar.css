@@ -158,6 +158,19 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: text;
+}
+
+.session-item__name-input {
+  font-size: 13px;
+  color: var(--color-text-primary, #e2e8f0);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-accent, #7c3aed);
+  border-radius: 3px;
+  padding: 1px 4px;
+  width: 100%;
+  outline: none;
+  font-family: inherit;
 }
 
 .session-item__meta {
@@ -212,31 +225,29 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 60px;
+  width: 28px;
   border: none;
-  background: rgba(20, 20, 35, 0.95);
+  background: rgba(124, 58, 237, 0.12);
   color: var(--color-accent, #7c3aed);
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(124, 58, 237, 0.25);
+  align-self: stretch;
 }
 
 .sidebar-toggle--left {
   border-radius: 0;
-  align-self: center;
 }
 
 .sidebar-toggle--right {
   border-radius: 0;
   border-right: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.08);
-  align-self: center;
+  border-left: 1px solid rgba(124, 58, 237, 0.25);
 }
 
 .sidebar-toggle:hover {
-  color: var(--color-text-primary, #e2e8f0);
-  background: rgba(124, 58, 237, 0.15);
-  width: 28px;
+  color: white;
+  background: rgba(124, 58, 237, 0.25);
+  width: 32px;
 }
