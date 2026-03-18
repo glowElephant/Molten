@@ -86,6 +86,7 @@ export const useTriggerStore = create<TriggerStore>((set, get) => ({
 
     for (const trigger of triggers) {
       if (!trigger.enabled) continue;
+      if (!trigger.pattern) continue; // skip empty patterns
       if (trigger.scope !== 'global' && trigger.scope !== sessionId) continue;
 
       // Cooldown check

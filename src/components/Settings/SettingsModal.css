@@ -175,6 +175,29 @@
   outline: none;
 }
 
+.setting-row__control select option {
+  background: var(--color-bg-panel-solid, #1a1a2e);
+  color: var(--color-text-primary, #e2e8f0);
+}
+
+/* Trigger item inputs */
+.trigger-item input[type="text"],
+.trigger-item select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: var(--color-text-primary, #e2e8f0);
+  padding: 4px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.trigger-item select option {
+  background: var(--color-bg-panel-solid, #1a1a2e);
+  color: var(--color-text-primary, #e2e8f0);
+}
+
 .setting-row__control select:focus,
 .setting-row__control input:focus {
   border-color: var(--color-accent, #7c3aed);
