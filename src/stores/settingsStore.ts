@@ -37,6 +37,7 @@ const defaultSettings: MoltenSettings = {
   titleBar: {
     position: 'top',
   },
+  windowShape: 'default',
 };
 
 interface SettingsStore {

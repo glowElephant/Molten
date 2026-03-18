@@ -13,7 +13,7 @@ interface SettingsModalProps {
 type SettingsTab = 'general' | 'terminal' | 'notifications' | 'appearance' | 'triggers';
 
 export function SettingsModal({ visible, onClose }: SettingsModalProps) {
-  const { settings, updateNestedSetting, resetSettings } = useSettingsStore();
+  const { settings, updateSetting, updateNestedSetting, resetSettings } = useSettingsStore();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
   if (!visible) return null;
@@ -219,6 +219,23 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                     <option value={0}>Instant</option>
                     <option value={1}>Normal</option>
                     <option value={2}>Slow</option>
+                  </select>
+                </SettingRow>
+
+                <h3>Window Shape</h3>
+                <SettingRow label="Shape">
+                  <select
+                    value={settings.windowShape}
+                    onChange={(e) =>
+                      updateSetting('windowShape', e.target.value as any)
+                    }
+                  >
+                    <option value="default">Default</option>
+                    <option value="rounded">Rounded</option>
+                    <option value="pill">Pill</option>
+                    <option value="hexagon">Hexagon</option>
+                    <option value="diamond">Diamond</option>
+                    <option value="circle">Circle</option>
                   </select>
                 </SettingRow>
               </div>

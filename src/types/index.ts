@@ -61,6 +61,7 @@ export interface MoltenSettings {
   animations: AnimationConfig;
   sidebar: SidebarConfig;
   titleBar: TitleBarConfig;
+  windowShape: WindowShape;
 }
 
 export interface FontConfig {
@@ -102,6 +103,8 @@ export interface SidebarConfig {
 export interface TitleBarConfig {
   position: 'top' | 'bottom' | 'left' | 'right' | 'hidden';
 }
+
+export type WindowShape = 'default' | 'rounded' | 'pill' | 'hexagon' | 'diamond' | 'circle';
 
 // Inter-session message types
 export interface InterSessionMessage {

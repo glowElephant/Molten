@@ -251,3 +251,27 @@ body {
   animation-duration: 0s !important;
   transition-duration: 0s !important;
 }
+
+/* ========== Custom Window Shapes (F2.6) ========== */
+[data-shape="rounded"] {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+[data-shape="pill"] {
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+[data-shape="hexagon"] {
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+}
+
+[data-shape="diamond"] {
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+[data-shape="circle"] {
+  border-radius: 50%;
+  overflow: hidden;
+}

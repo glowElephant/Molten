@@ -139,7 +139,7 @@ function App() {
   const standaloneSessions = sessionList.filter((s) => !splitSessionIds.has(s.id));
 
   return (
-    <div className="app" data-theme={settings.theme} data-animations={settings.animations.enabled ? 'on' : 'off'}>
+    <div className="app" data-theme={settings.theme} data-animations={settings.animations.enabled ? 'on' : 'off'} data-shape={settings.windowShape}>
       {titleBar.position === 'top' && <TitleBar position="top" />}
 
       <div className="app__body">
