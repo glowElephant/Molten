@@ -1,0 +1,1 @@
+export { QuickCommandBar } from './QuickCommand';

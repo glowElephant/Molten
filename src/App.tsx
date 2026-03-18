@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { TitleBar } from './components/TitleBar';
 import { Sidebar } from './components/Sidebar';
 import { StatusBar } from './components/StatusBar';
+import { QuickCommandBar } from './components/QuickCommand';
 import { TerminalPanel } from './components/Terminal';
 import { SplitView } from './components/SplitView';
 import { NotificationPanel } from './components/Notification';
@@ -200,6 +201,7 @@ function App() {
 
       {sidebar.position === 'bottom' && <Sidebar />}
       {titleBar.position === 'bottom' && <TitleBar position="bottom" />}
+      <QuickCommandBar />
       <StatusBar />
 
       <CommandPalette

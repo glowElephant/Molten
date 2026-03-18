@@ -1,6 +1,7 @@
 import { useSessionStore } from '../stores/sessionStore';
 import { useLayoutStore } from '../stores/layoutStore';
 import { useTriggerStore } from '../stores/triggerStore';
+import { useQuickCommandStore } from '../stores/quickCommandStore';
 import type { WorkspaceSnapshot } from '../types';
 import type { Session } from '../types';
 import type { LayoutGroup } from '../stores/layoutStore';
@@ -9,6 +10,7 @@ export function takeSnapshot(): WorkspaceSnapshot {
   const { sessions, sessionOrder, activeSessionId } = useSessionStore.getState();
   const { groups } = useLayoutStore.getState();
   const { triggers } = useTriggerStore.getState();
+  const { commands: quickCommands } = useQuickCommandStore.getState();
 
   return {
     version: 1,
@@ -16,6 +18,7 @@ export function takeSnapshot(): WorkspaceSnapshot {
     activeSessionId,
     sessionOrder,
     triggers,
+    quickCommands,
     sessions: Array.from(sessions.values()).map((s) => ({
       id: s.id,
       name: s.name,
@@ -77,6 +80,11 @@ export function restoreSnapshot(snapshot: WorkspaceSnapshot): boolean {
   // Restore triggers
   if (snapshot.triggers && snapshot.triggers.length > 0) {
     useTriggerStore.getState().setTriggers(snapshot.triggers);
+  }
+
+  // Restore quick commands
+  if (snapshot.quickCommands && snapshot.quickCommands.length > 0) {
+    useQuickCommandStore.getState().setCommands(snapshot.quickCommands);
   }
 
   return true;

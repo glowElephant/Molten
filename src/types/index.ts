@@ -139,6 +139,7 @@ export interface WorkspaceSnapshot {
   activeSessionId: string | null;
   sessionOrder: string[];
   triggers?: Trigger[];
+  quickCommands?: Array<{ id: string; name: string; command: string }>;
   sessions: Array<{
     id: string;
     name: string;
