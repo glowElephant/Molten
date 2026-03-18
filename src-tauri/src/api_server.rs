@@ -132,6 +132,27 @@ fn route(handle: &tauri::AppHandle, queue: &Arc<CommandQueue>, path: &str) -> (&
             ("200 OK", r#"{"success":true,"action":"split.reset"}"#.to_string())
         }
 
+        // Workspace presets
+        "/api/preset/dual" => {
+            eval_js(handle, "window.__moltenExec('preset.dual')");
+            ("200 OK", r#"{"success":true,"action":"preset.dual"}"#.to_string())
+        }
+
+        "/api/preset/triple" => {
+            eval_js(handle, "window.__moltenExec('preset.triple')");
+            ("200 OK", r#"{"success":true,"action":"preset.triple"}"#.to_string())
+        }
+
+        "/api/preset/stack" => {
+            eval_js(handle, "window.__moltenExec('preset.stack')");
+            ("200 OK", r#"{"success":true,"action":"preset.stack"}"#.to_string())
+        }
+
+        "/api/preset/focus" => {
+            eval_js(handle, "window.__moltenExec('preset.focus')");
+            ("200 OK", r#"{"success":true,"action":"preset.focus"}"#.to_string())
+        }
+
         // /api/session/close — close active session
         "/api/session/close" => {
             eval_js(handle, "window.__moltenExec('session.close')");

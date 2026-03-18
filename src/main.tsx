@@ -4,6 +4,8 @@ import App from "./App";
 import { useSessionStore } from "./stores/sessionStore";
 import { useSettingsStore } from "./stores/settingsStore";
 import { useLayoutStore } from "./stores/layoutStore";
+import { useWorkspaceStore } from "./stores/workspaceStore";
+import type { LayoutNode } from "./stores/layoutStore";
 import { captureSelf } from "./utils/selfCapture";
 
 // Dev-only: Register global command function that Rust API server calls via eval()
@@ -80,6 +82,43 @@ if (import.meta.env.DEV) {
       case 'split.reset':
         useLayoutStore.getState().setLayout(null);
         break;
+      case 'preset.dual':
+      case 'preset.triple':
+      case 'preset.stack':
+      case 'preset.focus': {
+        const presetName = action.replace('preset.', '');
+        const capitalName = presetName.charAt(0).toUpperCase() + presetName.slice(1);
+        const preset = useWorkspaceStore.getState().getPreset(capitalName);
+        if (preset) {
+          if (!preset.layout) {
+            useLayoutStore.getState().setLayout(null);
+            if (useSessionStore.getState().sessions.size === 0) {
+              useSessionStore.getState().createSession();
+            }
+          } else {
+            const sessionIds: string[] = [];
+            for (let i = 0; i < preset.sessionCount; i++) {
+              sessionIds.push(useSessionStore.getState().createSession());
+            }
+            const resolveLayout = (node: any): LayoutNode => {
+              if (node.type === 'terminal') {
+                const match = node.sessionId?.match(/__placeholder_(\d+)__/);
+                if (match) {
+                  const idx = parseInt(match[1]) - 1;
+                  return { type: 'terminal', sessionId: sessionIds[idx] || sessionIds[0] };
+                }
+                return node;
+              }
+              if (node.type === 'split' && node.children) {
+                return { ...node, children: node.children.map(resolveLayout) };
+              }
+              return node;
+            };
+            useLayoutStore.getState().setLayout(resolveLayout(preset.layout));
+          }
+        }
+        break;
+      }
       default:
         if (action.startsWith('session.switch.')) {
           const idx = parseInt(action.replace('session.switch.', '')) - 1;
