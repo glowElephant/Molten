@@ -280,7 +280,7 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
             value={imeText}
             onChange={(e) => setImeText(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.isComposing) {
+              if (e.key === 'Enter' && !(e.nativeEvent as KeyboardEvent).isComposing) {
                 e.preventDefault();
                 handleImeSend();
               }
