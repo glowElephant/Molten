@@ -85,6 +85,9 @@ impl PtyManager {
         // Mark this PTY as running inside Molten so hooks can skip terminal-specific actions
         cmd.env("MOLTEN", "1");
         cmd.env("TERM_PROGRAM", "molten");
+        // UTF-8 locale for Korean/CJK input
+        cmd.env("LANG", "C.UTF-8");
+        cmd.env("LC_ALL", "C.UTF-8");
 
         if let Some(env) = &config.env {
             for (key, value) in env {
