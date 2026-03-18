@@ -44,6 +44,7 @@
 .split-leaf {
   flex: 1;
   display: flex;
+  flex-direction: column;
   min-height: 0;
   min-width: 0;
   position: relative;
@@ -52,4 +53,58 @@
 .split-leaf--active {
   outline: 1px solid rgba(124, 58, 237, 0.3);
   outline-offset: -1px;
+}
+
+/* Split pane header with session name + close button */
+.split-leaf__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  padding: 0 8px;
+  background: rgba(15, 15, 25, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.split-leaf--active .split-leaf__header {
+  background: rgba(124, 58, 237, 0.08);
+  border-bottom-color: rgba(124, 58, 237, 0.2);
+}
+
+.split-leaf__name {
+  font-size: 11px;
+  color: var(--color-text-muted, #475569);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.split-leaf--active .split-leaf__name {
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.split-leaf__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted, #475569);
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.split-leaf:hover .split-leaf__close {
+  opacity: 1;
+}
+
+.split-leaf__close:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
 }
