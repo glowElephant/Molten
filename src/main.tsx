@@ -120,6 +120,16 @@ if (import.meta.env.DEV) {
         break;
       }
       default:
+        // Type text into active session's terminal
+        if (action.startsWith('session.type.')) {
+          const text = action.replace('session.type.', '');
+          const activeId = useSessionStore.getState().activeSessionId;
+          if (activeId) {
+            import('@tauri-apps/api/core').then(({ invoke }) => {
+              invoke('pty_write', { sessionId: activeId, data: text + '\n' }).catch(() => {});
+            });
+          }
+        }
         if (action.startsWith('session.switch.')) {
           const idx = parseInt(action.replace('session.switch.', '')) - 1;
           const keys = Array.from(useSessionStore.getState().sessions.keys());

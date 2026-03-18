@@ -159,8 +159,37 @@ fn route(handle: &tauri::AppHandle, queue: &Arc<CommandQueue>, path: &str) -> (&
             ("200 OK", r#"{"success":true,"action":"session.close"}"#.to_string())
         }
 
+        // /api/session/type/TEXT — type text into active session's terminal
+        _ if path.starts_with("/api/session/type/") => {
+            let text = path.trim_start_matches("/api/session/type/");
+            let decoded = urldecode(text);
+            let js = format!("window.__moltenExec('session.type.{}')", decoded.replace('\'', "\\'"));
+            eval_js(handle, &js);
+            ("200 OK", format!(r#"{{"success":true,"action":"session.type","text":"{}"}}"#, decoded))
+        }
+
         _ => ("404 Not Found", format!(r#"{{"error":"Unknown: {}"}}"#, path)),
     }
+}
+
+fn urldecode(s: &str) -> String {
+    let mut result = String::new();
+    let mut chars = s.bytes();
+    while let Some(b) = chars.next() {
+        if b == b'%' {
+            let h = chars.next().unwrap_or(b'0');
+            let l = chars.next().unwrap_or(b'0');
+            let hex = format!("{}{}", h as char, l as char);
+            if let Ok(val) = u8::from_str_radix(&hex, 16) {
+                result.push(val as char);
+            }
+        } else if b == b'+' {
+            result.push(' ');
+        } else {
+            result.push(b as char);
+        }
+    }
+    result
 }
 
 fn push_cmd(queue: &Arc<CommandQueue>, cmd: &str) {
