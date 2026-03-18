@@ -84,6 +84,16 @@ fn route(handle: &tauri::AppHandle, queue: &Arc<CommandQueue>, path: &str) -> (&
             ("200 OK", r#"{"success":true,"action":"sidebar.show"}"#.to_string())
         }
 
+        "/api/sidebar/left" => {
+            eval_js(handle, "window.__moltenExec('sidebar.left')");
+            ("200 OK", r#"{"success":true,"action":"sidebar.left"}"#.to_string())
+        }
+
+        "/api/sidebar/right" => {
+            eval_js(handle, "window.__moltenExec('sidebar.right')");
+            ("200 OK", r#"{"success":true,"action":"sidebar.right"}"#.to_string())
+        }
+
         "/api/capture" => {
             eval_js(handle, "window.__moltenExec('capture')");
             ("200 OK", r#"{"success":true,"action":"capture"}"#.to_string())

@@ -26,6 +26,12 @@ if (import.meta.env.DEV) {
       case 'sidebar.hide':
         useSettingsStore.getState().updateNestedSetting('sidebar', 'visible', false);
         break;
+      case 'sidebar.left':
+        useSettingsStore.getState().updateNestedSetting('sidebar', 'position', 'left');
+        break;
+      case 'sidebar.right':
+        useSettingsStore.getState().updateNestedSetting('sidebar', 'position', 'right');
+        break;
       case 'capture':
         captureSelf().catch(() => {});
         break;
