@@ -151,7 +151,9 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
     // Listen for PTY exit
     const unlistenExit = listen(`pty-exit-${sessionId}`, () => {
       terminal.writeln('\r\n\x1b[90m[Process exited]\x1b[0m');
-      updateStatus(sessionId, 'completed');
+      // Don't set to 'completed' — PTY exit can happen for many reasons
+      // Only AI agents finishing tasks should set 'completed'
+      updateStatus(sessionId, 'idle');
     });
 
     // Spawn PTY process (only if not already running)
