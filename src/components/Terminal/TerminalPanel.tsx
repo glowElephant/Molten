@@ -80,6 +80,9 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
 
     // Let app shortcuts pass through instead of being consumed by xterm
     terminal.attachCustomKeyEventHandler((e: KeyboardEvent) => {
+      // Don't intercept during IME composition (Korean, Japanese, Chinese input)
+      if (e.isComposing || e.keyCode === 229) return true;
+
       if (e.ctrlKey) {
         const key = e.key.toLowerCase();
         // App shortcuts that should NOT go to terminal
