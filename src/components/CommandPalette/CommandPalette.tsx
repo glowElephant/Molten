@@ -166,16 +166,7 @@ export function CommandPalette({ visible, onClose, onOpenSettings }: CommandPale
         action: () => {
           const prevActive = useSessionStore.getState().activeSessionId;
           const id = useSessionStore.getState().createSession();
-          const currentLayout = useLayoutStore.getState().layout;
-          if (!currentLayout && prevActive) {
-            useLayoutStore.getState().setLayout({
-              type: 'split', direction: 'horizontal',
-              children: [
-                { type: 'terminal', sessionId: prevActive },
-                { type: 'terminal', sessionId: id },
-              ],
-            });
-          } else if (currentLayout && prevActive) {
+          if (prevActive) {
             useLayoutStore.getState().splitActive('horizontal', id, prevActive);
           }
           onClose();
@@ -190,16 +181,7 @@ export function CommandPalette({ visible, onClose, onOpenSettings }: CommandPale
         action: () => {
           const prevActive = useSessionStore.getState().activeSessionId;
           const id = useSessionStore.getState().createSession();
-          const currentLayout = useLayoutStore.getState().layout;
-          if (!currentLayout && prevActive) {
-            useLayoutStore.getState().setLayout({
-              type: 'split', direction: 'vertical',
-              children: [
-                { type: 'terminal', sessionId: prevActive },
-                { type: 'terminal', sessionId: id },
-              ],
-            });
-          } else if (currentLayout && prevActive) {
+          if (prevActive) {
             useLayoutStore.getState().splitActive('vertical', id, prevActive);
           }
           onClose();

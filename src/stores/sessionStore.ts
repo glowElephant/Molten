@@ -4,6 +4,7 @@ import type { Session, SessionConfig, SessionStatus, SessionMetadata } from '../
 
 interface SessionStore {
   sessions: Map<string, Session>;
+  sessionOrder: string[];  // ordered list of all session IDs for display
   activeSessionId: string | null;
 
   // Actions
@@ -13,6 +14,7 @@ interface SessionStore {
   updateStatus: (id: string, status: SessionStatus) => void;
   updateMetadata: (id: string, metadata: Partial<SessionMetadata>) => void;
   renameSession: (id: string, name: string) => void;
+  reorderSessions: (fromIndex: number, toIndex: number) => void;
   getSession: (id: string) => Session | undefined;
   getActiveSessions: () => Session[];
 }
@@ -25,6 +27,7 @@ function generateId(): string {
 
 export const useSessionStore = create<SessionStore>((set, get) => ({
   sessions: new Map(),
+  sessionOrder: [],
   activeSessionId: null,
 
   createSession: (config?: SessionConfig) => {
@@ -50,6 +53,7 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       newSessions.set(id, session);
       return {
         sessions: newSessions,
+        sessionOrder: [...state.sessionOrder, id],
         activeSessionId: id,
       };
     });
@@ -64,15 +68,16 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
     set((state) => {
       const newSessions = new Map(state.sessions);
       newSessions.delete(id);
+      const newOrder = state.sessionOrder.filter((sid) => sid !== id);
 
       let newActiveId = state.activeSessionId;
       if (newActiveId === id) {
-        const remaining = Array.from(newSessions.keys());
-        newActiveId = remaining.length > 0 ? remaining[remaining.length - 1] : null;
+        newActiveId = newOrder.length > 0 ? newOrder[newOrder.length - 1] : null;
       }
 
       return {
         sessions: newSessions,
+        sessionOrder: newOrder,
         activeSessionId: newActiveId,
       };
     });
@@ -115,6 +120,15 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       const newSessions = new Map(state.sessions);
       newSessions.set(id, { ...session, name });
       return { sessions: newSessions };
+    });
+  },
+
+  reorderSessions: (fromIndex: number, toIndex: number) => {
+    set((state) => {
+      const newOrder = [...state.sessionOrder];
+      const [moved] = newOrder.splice(fromIndex, 1);
+      newOrder.splice(toIndex, 0, moved);
+      return { sessionOrder: newOrder };
     });
   },
 

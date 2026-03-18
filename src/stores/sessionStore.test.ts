@@ -6,6 +6,7 @@ describe('SessionStore', () => {
     // Reset store state
     useSessionStore.setState({
       sessions: new Map(),
+      sessionOrder: [],
       activeSessionId: null,
     });
   });

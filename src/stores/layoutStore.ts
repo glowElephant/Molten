@@ -10,46 +10,220 @@ export interface LayoutNode {
   children?: LayoutNode[];     // Only for type='split', supports N children
 }
 
-interface LayoutStore {
-  layout: LayoutNode | null;
+export interface LayoutGroup {
+  id: string;
+  name: string;
+  layout: LayoutNode;
+  collapsed: boolean;  // sidebar UI state
+}
 
-  setLayout: (layout: LayoutNode | null) => void;
+interface LayoutStore {
+  groups: LayoutGroup[];
+
+  /** Legacy getter: returns the layout of the group containing the active session, or null */
+  getActiveLayout: () => LayoutNode | null;
+
+  /** Create a new group with a layout and return its id */
+  addGroup: (name: string, layout: LayoutNode) => string;
+  /** Remove a group entirely */
+  removeGroup: (groupId: string) => void;
+  /** Rename a group */
+  renameGroup: (groupId: string, name: string) => void;
+  /** Toggle collapsed state */
+  toggleGroupCollapse: (groupId: string) => void;
+
+  /** Reorder groups in the sidebar */
+  reorderGroups: (fromIndex: number, toIndex: number) => void;
+
+  /** Split the active (or target) session within its group, or create a new group if standalone */
   splitActive: (direction: SplitDirection, newSessionId: string, targetSessionId?: string | null) => void;
+  /** Remove a session from whichever group contains it */
   removeFromLayout: (sessionId: string) => void;
-  setSingleSession: (sessionId: string) => void;
+  /** Find which group a session belongs to */
+  findGroupBySession: (sessionId: string) => LayoutGroup | undefined;
+  /** Collect all session IDs across all groups */
+  getAllSplitSessionIds: () => Set<string>;
+
+  /** Legacy: set a single layout (replaces all groups with one) */
+  setLayout: (layout: LayoutNode | null) => void;
+}
+
+let groupCounter = 0;
+
+function generateGroupId(): string {
+  groupCounter++;
+  return `group-${Date.now()}-${groupCounter}`;
 }
 
 export const useLayoutStore = create<LayoutStore>((set, get) => ({
-  layout: null,
+  groups: [],
 
-  setLayout: (layout) => set({ layout }),
+  getActiveLayout: () => {
+    const { groups } = get();
+    if (groups.length === 0) return null;
+    const activeId = useSessionStore.getState().activeSessionId;
+    if (!activeId) return groups.length > 0 ? groups[0].layout : null;
+    const group = groups.find((g) => collectSessionIds(g.layout).includes(activeId));
+    return group?.layout ?? null;
+  },
 
-  setSingleSession: (sessionId: string) => {
-    set({ layout: { type: 'terminal', sessionId } });
+  addGroup: (name: string, layout: LayoutNode) => {
+    const id = generateGroupId();
+    set((state) => ({
+      groups: [...state.groups, { id, name, layout, collapsed: false }],
+    }));
+    return id;
+  },
+
+  removeGroup: (groupId: string) => {
+    set((state) => ({
+      groups: state.groups.filter((g) => g.id !== groupId),
+    }));
+  },
+
+  renameGroup: (groupId: string, name: string) => {
+    set((state) => ({
+      groups: state.groups.map((g) =>
+        g.id === groupId ? { ...g, name } : g
+      ),
+    }));
+  },
+
+  toggleGroupCollapse: (groupId: string) => {
+    set((state) => ({
+      groups: state.groups.map((g) =>
+        g.id === groupId ? { ...g, collapsed: !g.collapsed } : g
+      ),
+    }));
+  },
+
+  reorderGroups: (fromIndex: number, toIndex: number) => {
+    set((state) => {
+      const newGroups = [...state.groups];
+      const [moved] = newGroups.splice(fromIndex, 1);
+      newGroups.splice(toIndex, 0, moved);
+      return { groups: newGroups };
+    });
   },
 
   splitActive: (direction: SplitDirection, newSessionId: string, targetSessionId?: string | null) => {
-    const { layout } = get();
-    if (!layout) {
-      set({ layout: { type: 'terminal', sessionId: newSessionId } });
-      return;
-    }
-
+    const { groups } = get();
     const activeId = targetSessionId || useSessionStore.getState().activeSessionId;
+
     if (!activeId) {
-      set({ layout: { type: 'terminal', sessionId: newSessionId } });
+      // No active session — just create a lone terminal group
+      const id = generateGroupId();
+      set((state) => ({
+        groups: [...state.groups, {
+          id,
+          name: `Split Group ${state.groups.length + 1}`,
+          layout: { type: 'terminal' as const, sessionId: newSessionId },
+          collapsed: false,
+        }],
+      }));
       return;
     }
 
-    const newLayout = addToSplit(layout, activeId, direction, newSessionId);
-    set({ layout: newLayout });
+    // Find if active session is in an existing group
+    const existingGroup = groups.find((g) =>
+      collectSessionIds(g.layout).includes(activeId)
+    );
+
+    if (existingGroup) {
+      // Split within the existing group
+      const newLayout = addToSplit(existingGroup.layout, activeId, direction, newSessionId);
+      set((state) => ({
+        groups: state.groups.map((g) =>
+          g.id === existingGroup.id ? { ...g, layout: newLayout } : g
+        ),
+      }));
+    } else {
+      // Active session is standalone — create a new group with both sessions
+      const id = generateGroupId();
+      set((state) => ({
+        groups: [...state.groups, {
+          id,
+          name: `Split Group ${state.groups.length + 1}`,
+          layout: {
+            type: 'split' as const,
+            direction,
+            children: [
+              { type: 'terminal' as const, sessionId: activeId },
+              { type: 'terminal' as const, sessionId: newSessionId },
+            ],
+          },
+          collapsed: false,
+        }],
+      }));
+    }
   },
 
   removeFromLayout: (sessionId: string) => {
-    const { layout } = get();
-    if (!layout) return;
-    const newLayout = removeNode(layout, sessionId);
-    set({ layout: newLayout });
+    const { groups } = get();
+    const group = groups.find((g) =>
+      collectSessionIds(g.layout).includes(sessionId)
+    );
+    if (!group) return;
+
+    const newLayout = removeNode(group.layout, sessionId);
+    if (!newLayout) {
+      // Group is now empty — remove it
+      set((state) => ({
+        groups: state.groups.filter((g) => g.id !== group.id),
+      }));
+    } else if (newLayout.type === 'terminal') {
+      // Only one session left — remove the group (session becomes standalone)
+      set((state) => ({
+        groups: state.groups.filter((g) => g.id !== group.id),
+      }));
+    } else {
+      set((state) => ({
+        groups: state.groups.map((g) =>
+          g.id === group.id ? { ...g, layout: newLayout } : g
+        ),
+      }));
+    }
+  },
+
+  findGroupBySession: (sessionId: string) => {
+    return get().groups.find((g) =>
+      collectSessionIds(g.layout).includes(sessionId)
+    );
+  },
+
+  getAllSplitSessionIds: () => {
+    const ids = new Set<string>();
+    for (const group of get().groups) {
+      for (const id of collectSessionIds(group.layout)) {
+        ids.add(id);
+      }
+    }
+    return ids;
+  },
+
+  // Legacy setter: replaces all groups with a single group
+  setLayout: (layout: LayoutNode | null) => {
+    if (!layout) {
+      set({ groups: [] });
+      return;
+    }
+    // If there's exactly one group, replace its layout
+    const { groups } = get();
+    if (groups.length === 1) {
+      set({
+        groups: [{ ...groups[0], layout }],
+      });
+    } else {
+      // Replace all with a single group
+      set({
+        groups: [{
+          id: generateGroupId(),
+          name: 'Split Group 1',
+          layout,
+          collapsed: false,
+        }],
+      });
+    }
   },
 }));
 
@@ -123,4 +297,14 @@ function removeNode(node: LayoutNode, sessionId: string): LayoutNode | null {
   }
 
   return node;
+}
+
+/** Collect all sessionIds from a layout tree */
+export function collectSessionIds(node: LayoutNode | null): string[] {
+  if (!node) return [];
+  if (node.type === 'terminal' && node.sessionId) return [node.sessionId];
+  if (node.type === 'split' && node.children) {
+    return node.children.flatMap(collectSessionIds);
+  }
+  return [];
 }

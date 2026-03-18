@@ -349,3 +349,19 @@
   background: rgba(124, 58, 237, 0.25);
   width: 32px;
 }
+
+/* Drag reorder feedback */
+.sidebar__group--dragging,
+.session-item--dragging {
+  opacity: 0.4;
+}
+
+.sidebar__group--drop-above,
+.session-item--drop-above {
+  box-shadow: 0 -2px 0 0 var(--color-accent, #7c3aed);
+}
+
+.sidebar__group--drop-below,
+.session-item--drop-below {
+  box-shadow: 0 2px 0 0 var(--color-accent, #7c3aed);
+}

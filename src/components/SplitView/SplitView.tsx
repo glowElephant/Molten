@@ -2,7 +2,7 @@ import { useRef, useState, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { TerminalPanel } from '../Terminal';
 import { useSessionStore } from '../../stores/sessionStore';
-import { useLayoutStore } from '../../stores/layoutStore';
+import { useLayoutStore, collectSessionIds } from '../../stores/layoutStore';
 import type { LayoutNode } from '../../stores/layoutStore';
 import './SplitView.css';
 
@@ -162,11 +162,4 @@ function getNodeKey(node: LayoutNode, index: number): string {
   return `split-${index}`;
 }
 
-export function collectSessionIds(node: LayoutNode | null): string[] {
-  if (!node) return [];
-  if (node.type === 'terminal' && node.sessionId) return [node.sessionId];
-  if (node.type === 'split' && node.children) {
-    return node.children.flatMap(collectSessionIds);
-  }
-  return [];
-}
+export { collectSessionIds };

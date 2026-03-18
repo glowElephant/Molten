@@ -3,7 +3,7 @@ import { TitleBar } from './components/TitleBar';
 import { Sidebar } from './components/Sidebar';
 import { StatusBar } from './components/StatusBar';
 import { TerminalPanel } from './components/Terminal';
-import { SplitView, collectSessionIds } from './components/SplitView';
+import { SplitView } from './components/SplitView';
 import { NotificationPanel } from './components/Notification';
 import { SettingsModal } from './components/Settings';
 import { CommandPalette } from './components/CommandPalette';
@@ -25,7 +25,7 @@ function App() {
   const { sidebar, titleBar } = settings;
   const { sessions, activeSessionId, createSession } = useSessionStore();
   const { togglePanel: toggleNotifications } = useNotificationStore();
-  const { layout } = useLayoutStore();
+  const { groups } = useLayoutStore();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [paletteVisible, setPaletteVisible] = useState(false);
   const [guideVisible, setGuideVisible] = useState(false);
@@ -43,17 +43,7 @@ function App() {
         e.preventDefault();
         const prevActive = useSessionStore.getState().activeSessionId;
         const id = useSessionStore.getState().createSession();
-        const currentLayout = useLayoutStore.getState().layout;
-        if (!currentLayout && prevActive) {
-          useLayoutStore.getState().setLayout({
-            type: 'split',
-            direction: 'horizontal',
-            children: [
-              { type: 'terminal', sessionId: prevActive },
-              { type: 'terminal', sessionId: id },
-            ],
-          });
-        } else if (currentLayout && prevActive) {
+        if (prevActive) {
           useLayoutStore.getState().splitActive('horizontal', id, prevActive);
         }
       }
@@ -61,17 +51,7 @@ function App() {
         e.preventDefault();
         const prevActive = useSessionStore.getState().activeSessionId;
         const id = useSessionStore.getState().createSession();
-        const currentLayout = useLayoutStore.getState().layout;
-        if (!currentLayout && prevActive) {
-          useLayoutStore.getState().setLayout({
-            type: 'split',
-            direction: 'vertical',
-            children: [
-              { type: 'terminal', sessionId: prevActive },
-              { type: 'terminal', sessionId: id },
-            ],
-          });
-        } else if (currentLayout && prevActive) {
+        if (prevActive) {
           useLayoutStore.getState().splitActive('vertical', id, prevActive);
         }
       }
@@ -134,20 +114,23 @@ function App() {
   const sessionList = Array.from(sessions.values());
   const hasAnySessions = sessionList.length > 0;
 
-  // Auto-clear layout when no sessions in layout remain
-  if (layout && !hasAnySessions) {
+  // Auto-clear groups when no sessions remain
+  if (groups.length > 0 && !hasAnySessions) {
     setTimeout(() => useLayoutStore.getState().setLayout(null), 0);
   }
 
-  // Determine which sessions are in the split layout
-  const splitSessionIds = new Set(
-    layout ? collectSessionIds(layout) : []
-  );
+  // Collect all session IDs that are in any split group
+  const splitSessionIds = useLayoutStore.getState().getAllSplitSessionIds();
 
-  // Is the active session part of the split layout?
-  const activeInSplit = activeSessionId ? splitSessionIds.has(activeSessionId) : false;
+  // Find which group contains the active session
+  const activeGroup = activeSessionId
+    ? groups.find((g) => {
+        const ids = useLayoutStore.getState().findGroupBySession(activeSessionId);
+        return ids?.id === g.id;
+      })
+    : undefined;
 
-  // Sessions NOT in the split layout (standalone)
+  // Sessions NOT in any split group (standalone)
   const standaloneSessions = sessionList.filter((s) => !splitSessionIds.has(s.id));
 
   return (
@@ -159,20 +142,26 @@ function App() {
         {sidebar.position === 'left' && <Sidebar />}
 
         <main className="app__content">
-          {/* Layer: Split view (visible when active session is in split) */}
-          {layout && layout.type === 'split' && (
-            <div style={{ display: activeInSplit ? 'flex' : 'none', flex: 1, minHeight: 0 }}>
-              <SplitView node={layout} />
-            </div>
-          )}
+          {/* Layer: Each split group (visible when active session is in that group) */}
+          {groups.map((group) => {
+            const isActiveGroup = activeGroup?.id === group.id;
+            return (
+              <div
+                key={group.id}
+                style={{ display: isActiveGroup ? 'flex' : 'none', flex: 1, minHeight: 0 }}
+              >
+                <SplitView node={group.layout} />
+              </div>
+            );
+          })}
 
-          {/* Layer: Standalone sessions (visible when active session is NOT in split) */}
+          {/* Layer: Standalone sessions (visible when active session is NOT in any group) */}
           {standaloneSessions.map((session) => (
             <div
               key={session.id}
               className="app__terminal-wrapper"
               style={{
-                display: !activeInSplit && session.id === activeSessionId ? 'flex' : 'none',
+                display: !activeGroup && session.id === activeSessionId ? 'flex' : 'none',
                 flexDirection: 'column',
                 flex: 1,
                 minHeight: 0,
