@@ -77,10 +77,26 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
       allowProposedApi: true,
     });
 
-    // Let app shortcuts (Ctrl+N, Ctrl+B, etc.) pass through instead of being consumed
+    // Let app shortcuts pass through instead of being consumed by xterm
     terminal.attachCustomKeyEventHandler((e: KeyboardEvent) => {
-      if (e.ctrlKey && (e.key === 'n' || e.key === 'b' || e.key === 'p')) {
-        return false; // Don't handle in xterm, let it propagate
+      if (e.ctrlKey) {
+        const key = e.key.toLowerCase();
+        // App shortcuts that should NOT go to terminal
+        if (
+          key === 'n' ||  // New session
+          key === 'b' ||  // Toggle sidebar
+          key === 'p' ||  // Command palette
+          key === 'w' ||  // Close session
+          key === ',' ||  // Settings
+          key === 'tab' || // Next session
+          (key >= '1' && key <= '9') // Switch session by number
+        ) {
+          return false;
+        }
+        // Ctrl+Shift+N: notification panel
+        if (e.shiftKey && key === 'n') {
+          return false;
+        }
       }
       return true;
     });

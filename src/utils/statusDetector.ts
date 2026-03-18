@@ -38,9 +38,7 @@ const AGENT_PATTERNS: Record<string, StatusPattern[]> = {
     {
       status: 'completed',
       patterns: [
-        /Task completed/i,
-        /Done[.!]?\s*$/,
-        /Finished/i,
+        /^Task completed/im,
       ],
     },
   ],

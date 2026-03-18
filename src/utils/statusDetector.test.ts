@@ -21,7 +21,11 @@ describe('detectStatus', () => {
 
     it('should detect completed status', () => {
       expect(detectStatus('Task completed', 'claude_code')).toBe('completed');
-      expect(detectStatus('Done.', 'claude_code')).toBe('completed');
+    });
+
+    it('should not false-positive on common words', () => {
+      expect(detectStatus('Done.', 'claude_code')).toBeNull();
+      expect(detectStatus('Finished loading', 'claude_code')).toBeNull();
     });
 
     it('should return null for unrecognized output', () => {
