@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useSessionStore } from '../stores/sessionStore';
 import { useLayoutStore } from '../stores/layoutStore';
 import { useTriggerStore } from '../stores/triggerStore';
@@ -53,15 +52,15 @@ export function useWorkspacePersistence() {
     return () => clearTimeout(timer);
   }, [sessions, sessionOrder, activeSessionId, groups, triggers, quickCommands]);
 
-  // Save on window close (guaranteed via Tauri's onCloseRequested)
+  // Save on window close — fire-and-forget, don't block close
   useEffect(() => {
-    const unlisten = getCurrentWindow().onCloseRequested(async () => {
+    const handleBeforeUnload = () => {
       const snapshot = takeSnapshot();
-      await invoke('save_workspace', {
+      invoke('save_workspace', {
         data: JSON.stringify(snapshot, null, 2),
       }).catch(() => {});
-    });
-
-    return () => { unlisten.then((fn) => fn()); };
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 }
