@@ -18,6 +18,12 @@
 
 ---
 
+<p align="center">
+  <img src="docs/assets/screenshot-triple.png" alt="Molten Triple Split" width="800" />
+</p>
+
+---
+
 ## What is Molten?
 
 Molten is a **desktop terminal wrapper** built for managing multiple AI coding agent sessions — Claude Code, Codex, Gemini CLI, Aider, and more.
@@ -125,18 +131,18 @@ pnpm tauri dev
 
 | Shortcut | Action |
 |---|---|
-| `Ctrl+N` | New session |
-| `Ctrl+D` | Split vertical |
-| `Ctrl+Shift+D` | Split horizontal |
-| `Ctrl+W` | Close session |
+| `Ctrl+N` | New session (exits split mode) |
+| `Ctrl+D` | Split left/right |
+| `Ctrl+Shift+D` | Split top/bottom |
+| `Ctrl+W` | Close active session |
 | `Ctrl+P` | Command palette |
 | `Ctrl+,` | Settings |
 | `Ctrl+Tab` | Next session |
-| `Ctrl+Shift+Tab` | Previous session |
 | `Ctrl+1-9` | Switch to session N |
 | `Ctrl+B` | Toggle sidebar |
-| `Ctrl+\`` | Quick terminal (Quake mode) |
-| `Ctrl+?` | Keybinding cheat sheet |
+| `Ctrl+Shift+N` | Toggle notifications |
+| `Ctrl+Shift+?` | Keybinding cheat sheet |
+| `Escape` | Close overlays |
 
 ---
 
@@ -219,7 +225,8 @@ Contributions are welcome! Whether it's bug fixes, new features, plugins, or doc
 - [x] Product specification
 - [x] Architecture design
 - [x] Plugin API design
-- [ ] **Phase 1** — Core (terminal, sessions, docking, notifications)
+- [x] **Phase 1** — Core terminal, multi-session, split view, settings, notifications
+- [ ] **Phase 1.5** — Session grouping, drag reorder, docking system
 - [ ] **Phase 2** — Polish (animations, blocks, triggers, persistence)
 - [ ] **Phase 3** — Ecosystem (plugins, marketplace, themes, CLI)
 
