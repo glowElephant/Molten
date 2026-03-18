@@ -15,6 +15,8 @@ interface SessionStore {
   updateMetadata: (id: string, metadata: Partial<SessionMetadata>) => void;
   renameSession: (id: string, name: string) => void;
   reorderSessions: (fromIndex: number, toIndex: number) => void;
+  restoreSession: (session: Session) => void;
+  setSessionOrder: (order: string[], activeId: string | null) => void;
   getSession: (id: string) => Session | undefined;
   getActiveSessions: () => Session[];
 }
@@ -130,6 +132,22 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
       newOrder.splice(toIndex, 0, moved);
       return { sessionOrder: newOrder };
     });
+  },
+
+  restoreSession: (session: Session) => {
+    set((state) => {
+      const newSessions = new Map(state.sessions);
+      newSessions.set(session.id, session);
+      return {
+        sessions: newSessions,
+        sessionOrder: [...state.sessionOrder, session.id],
+      };
+    });
+    sessionCounter = Math.max(sessionCounter, get().sessions.size);
+  },
+
+  setSessionOrder: (order: string[], activeId: string | null) => {
+    set({ sessionOrder: order, activeSessionId: activeId });
   },
 
   getSession: (id: string) => {

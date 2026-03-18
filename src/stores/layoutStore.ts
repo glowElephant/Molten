@@ -44,6 +44,9 @@ interface LayoutStore {
   /** Collect all session IDs across all groups */
   getAllSplitSessionIds: () => Set<string>;
 
+  /** Restore groups from saved snapshot */
+  restoreGroups: (groups: LayoutGroup[]) => void;
+
   /** Legacy: set a single layout (replaces all groups with one) */
   setLayout: (layout: LayoutNode | null) => void;
 }
@@ -199,6 +202,11 @@ export const useLayoutStore = create<LayoutStore>((set, get) => ({
       }
     }
     return ids;
+  },
+
+  restoreGroups: (groups: LayoutGroup[]) => {
+    set({ groups });
+    groupCounter = Math.max(groupCounter, groups.length);
   },
 
   // Legacy setter: replaces all groups with a single group

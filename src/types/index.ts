@@ -103,6 +103,27 @@ export interface TitleBarConfig {
   position: 'top' | 'bottom' | 'left' | 'right' | 'hidden';
 }
 
+// Workspace persistence types
+export interface WorkspaceSnapshot {
+  version: 1;
+  savedAt: string;
+  activeSessionId: string | null;
+  sessionOrder: string[];
+  sessions: Array<{
+    id: string;
+    name: string;
+    workingDir: string;
+    agentType: AgentType | null;
+    createdAt: string;
+  }>;
+  groups: Array<{
+    id: string;
+    name: string;
+    layout: unknown;
+    collapsed: boolean;
+  }>;
+}
+
 // Event types
 export type MoltenEventMap = {
   'session:created': { sessionId: string; name: string };

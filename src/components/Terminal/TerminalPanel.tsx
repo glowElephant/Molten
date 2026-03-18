@@ -163,7 +163,7 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
         sessionId,
         config: {
           shell: settings.terminal.defaultShell || null,
-          cwd: settings.terminal.defaultCwd || null,
+          cwd: getSession(sessionId)?.metadata?.workingDir || settings.terminal.defaultCwd || null,
           env: null,
           cols: terminal.cols,
           rows: terminal.rows,

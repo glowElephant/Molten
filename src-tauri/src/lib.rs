@@ -34,6 +34,8 @@ pub fn run() {
                 capture::capture_window,
                 config::load_config,
                 config::save_config,
+                config::load_workspace,
+                config::save_workspace,
             ])
             .setup(move |app| {
                 let handle = app.handle().clone();
@@ -55,6 +57,8 @@ pub fn run() {
                 capture::capture_window,
                 config::load_config,
                 config::save_config,
+                config::load_workspace,
+                config::save_workspace,
             ]);
     }
 

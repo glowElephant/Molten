@@ -102,6 +102,25 @@ pub fn save_config(config: String) -> Result<(), String> {
         .map_err(|e| format!("Failed to write config: {}", e))
 }
 
+/// Load workspace snapshot from file
+#[tauri::command]
+pub fn load_workspace() -> Result<String, String> {
+    let path = config_dir().join("workspace.json");
+    if !path.exists() {
+        return Ok("{}".to_string());
+    }
+    std::fs::read_to_string(&path)
+        .map_err(|e| format!("Failed to read workspace: {}", e))
+}
+
+/// Save workspace snapshot to file
+#[tauri::command]
+pub fn save_workspace(data: String) -> Result<(), String> {
+    let path = config_dir().join("workspace.json");
+    std::fs::write(&path, data)
+        .map_err(|e| format!("Failed to write workspace: {}", e))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
