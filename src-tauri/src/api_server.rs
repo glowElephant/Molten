@@ -1,7 +1,6 @@
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::sync::{Arc, Mutex};
-use tauri::webview::WebviewWindowBuilder;
 use tauri::Manager;
 
 /// Pending commands queue

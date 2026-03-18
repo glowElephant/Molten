@@ -4,7 +4,6 @@ use tauri::State;
 
 #[cfg(debug_assertions)]
 use crate::api_server::CommandQueue;
-use std::sync::Mutex;
 
 /// Tauri state wrapper for PTY manager
 pub struct PtyState(pub Arc<PtyManager>);

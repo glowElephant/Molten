@@ -7,6 +7,7 @@ import { SplitView } from './components/SplitView';
 import { NotificationPanel } from './components/Notification';
 import { SettingsModal } from './components/Settings';
 import { CommandPalette } from './components/CommandPalette';
+import { KeybindingGuide } from './components/KeybindingGuide';
 import { useSettingsStore } from './stores/settingsStore';
 import { useSessionStore } from './stores/sessionStore';
 import { useNotificationStore } from './stores/notificationStore';
@@ -25,6 +26,7 @@ function App() {
   const { layout } = useLayoutStore();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [paletteVisible, setPaletteVisible] = useState(false);
+  const [guideVisible, setGuideVisible] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -111,9 +113,15 @@ function App() {
           state.setActiveSession(keys[(idx + 1) % keys.length]);
         }
       }
+      // Ctrl+? : Keybinding guide
+      if (e.ctrlKey && e.shiftKey && e.key === '?') {
+        e.preventDefault();
+        setGuideVisible((v) => !v);
+      }
       if (e.key === 'Escape') {
         setPaletteVisible(false);
         setSettingsVisible(false);
+        setGuideVisible(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown, true);
@@ -183,6 +191,10 @@ function App() {
       <SettingsModal
         visible={settingsVisible}
         onClose={() => setSettingsVisible(false)}
+      />
+      <KeybindingGuide
+        visible={guideVisible}
+        onClose={() => setGuideVisible(false)}
       />
     </div>
   );

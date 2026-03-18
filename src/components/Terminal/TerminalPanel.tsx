@@ -94,8 +94,8 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
         ) {
           return false;
         }
-        // Ctrl+Shift+N: notification panel
-        if (e.shiftKey && key === 'n') {
+        // Ctrl+Shift combos: notification panel, keybinding guide
+        if (e.shiftKey && (key === 'n' || key === '?')) {
           return false;
         }
       }

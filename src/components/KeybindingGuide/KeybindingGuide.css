@@ -1,0 +1,97 @@
+.keybinding-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+.keybinding-guide {
+  width: 420px;
+  max-height: 80vh;
+  background: rgba(18, 18, 30, 0.98);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.keybinding-guide__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary, #e2e8f0);
+}
+
+.keybinding-guide__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted, #475569);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.keybinding-guide__close:hover {
+  color: var(--color-text-primary, #e2e8f0);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.keybinding-guide__body {
+  padding: 12px 20px 20px;
+  overflow-y: auto;
+  max-height: 60vh;
+}
+
+.keybinding-group {
+  margin-bottom: 16px;
+}
+
+.keybinding-group:last-child {
+  margin-bottom: 0;
+}
+
+.keybinding-group__title {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--color-text-muted, #475569);
+  margin-bottom: 6px;
+}
+
+.keybinding-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+}
+
+.keybinding-row__keys {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--color-accent, #7c3aed);
+  min-width: 100px;
+  text-align: center;
+}
+
+.keybinding-row__action {
+  font-size: 13px;
+  color: var(--color-text-secondary, #94a3b8);
+}

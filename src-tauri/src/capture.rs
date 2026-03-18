@@ -4,17 +4,10 @@ use windows::Win32::{
     Graphics::Gdi::{
         CreateCompatibleBitmap, CreateCompatibleDC, DeleteDC, DeleteObject,
         GetDC, GetDIBits, ReleaseDC, SelectObject, BITMAPINFO, BITMAPINFOHEADER,
-        BI_RGB, DIB_RGB_COLORS, HDC,
+        BI_RGB, DIB_RGB_COLORS,
     },
     UI::WindowsAndMessaging::GetClientRect,
 };
-
-// PrintWindow is not exposed in windows crate 0.61, use raw FFI
-#[cfg(target_os = "windows")]
-unsafe extern "system" fn print_window_raw(hwnd: isize, hdc: isize, flags: u32) -> i32 {
-    // Use LoadLibrary/GetProcAddress approach
-    0 // placeholder
-}
 
 #[cfg(target_os = "windows")]
 mod ffi {
