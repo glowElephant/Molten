@@ -59,6 +59,47 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
+/* Session group */
+.sidebar__group {
+  margin: 4px 0;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.sidebar__group--active {
+  border-color: rgba(124, 58, 237, 0.2);
+  background: rgba(124, 58, 237, 0.04);
+}
+
+.sidebar__group-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted, #475569);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sidebar__group--active .sidebar__group-header {
+  color: var(--color-accent, #7c3aed);
+}
+
+.sidebar__group-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.sidebar__group-count {
+  margin-left: auto;
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 1px 5px;
+  border-radius: 8px;
+}
+
 .sidebar__sessions {
   flex: 1;
   overflow-y: auto;

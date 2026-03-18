@@ -1,15 +1,26 @@
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
 import { useSessionStore } from '../../stores/sessionStore';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useLayoutStore } from '../../stores/layoutStore';
+import { collectSessionIds } from '../SplitView';
 import { SessionItem } from './SessionItem';
 import './Sidebar.css';
 
 export function Sidebar() {
   const { settings, updateNestedSetting } = useSettingsStore();
   const { sessions, activeSessionId, createSession, setActiveSession } = useSessionStore();
+  const { layout } = useLayoutStore();
   const { visible, position, width } = settings.sidebar;
 
   const sessionList = Array.from(sessions.values());
+
+  // Determine which sessions are in the split group
+  const splitSessionIds = new Set(layout ? collectSessionIds(layout) : []);
+  const splitSessions = sessionList.filter((s) => splitSessionIds.has(s.id));
+  const standaloneSessions = sessionList.filter((s) => !splitSessionIds.has(s.id));
+
+  // Is the active session in the split group?
+  const activeInSplit = activeSessionId ? splitSessionIds.has(activeSessionId) : false;
 
   const handleNewSession = () => {
     createSession();
@@ -30,6 +41,9 @@ export function Sidebar() {
       </button>
     );
   }
+
+  // Global index counter for Ctrl+1~9
+  let globalIndex = 0;
 
   return (
     <div
@@ -66,15 +80,51 @@ export function Sidebar() {
             </button>
           </div>
         ) : (
-          sessionList.map((session, index) => (
-            <SessionItem
-              key={session.id}
-              session={session}
-              index={index + 1}
-              isActive={session.id === activeSessionId}
-              onClick={() => setActiveSession(session.id)}
-            />
-          ))
+          <>
+            {/* Split group */}
+            {splitSessions.length > 0 && (
+              <div className={`sidebar__group ${activeInSplit ? 'sidebar__group--active' : ''}`}>
+                <div
+                  className="sidebar__group-header"
+                  onClick={() => {
+                    if (splitSessions.length > 0) {
+                      setActiveSession(splitSessions[0].id);
+                    }
+                  }}
+                >
+                  <Layers size={12} />
+                  <span>Split Group</span>
+                  <span className="sidebar__group-count">{splitSessions.length}</span>
+                </div>
+                {splitSessions.map((session) => {
+                  globalIndex++;
+                  return (
+                    <SessionItem
+                      key={session.id}
+                      session={session}
+                      index={globalIndex}
+                      isActive={session.id === activeSessionId}
+                      onClick={() => setActiveSession(session.id)}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Standalone sessions */}
+            {standaloneSessions.map((session) => {
+              globalIndex++;
+              return (
+                <SessionItem
+                  key={session.id}
+                  session={session}
+                  index={globalIndex}
+                  isActive={session.id === activeSessionId}
+                  onClick={() => setActiveSession(session.id)}
+                />
+              );
+            })}
+          </>
         )}
       </div>
     </div>
