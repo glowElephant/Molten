@@ -1,4 +1,5 @@
-import { Plus, ChevronLeft, ChevronRight, Layers } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Plus, ChevronLeft, ChevronRight, ChevronDown, Layers } from 'lucide-react';
 import { useSessionStore } from '../../stores/sessionStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useLayoutStore } from '../../stores/layoutStore';
@@ -12,22 +13,32 @@ export function Sidebar() {
   const { layout } = useLayoutStore();
   const { visible, position, width } = settings.sidebar;
 
-  const sessionList = Array.from(sessions.values());
+  const [groupName, setGroupName] = useState('Split Group');
+  const [groupCollapsed, setGroupCollapsed] = useState(false);
+  const [isEditingGroup, setIsEditingGroup] = useState(false);
+  const [editGroupName, setEditGroupName] = useState(groupName);
+  const groupInputRef = useRef<HTMLInputElement>(null);
 
-  // Determine which sessions are in the split group
+  const sessionList = Array.from(sessions.values());
   const splitSessionIds = new Set(layout ? collectSessionIds(layout) : []);
   const splitSessions = sessionList.filter((s) => splitSessionIds.has(s.id));
   const standaloneSessions = sessionList.filter((s) => !splitSessionIds.has(s.id));
-
-  // Is the active session in the split group?
   const activeInSplit = activeSessionId ? splitSessionIds.has(activeSessionId) : false;
 
-  const handleNewSession = () => {
-    createSession();
-  };
+  useEffect(() => {
+    if (isEditingGroup && groupInputRef.current) {
+      groupInputRef.current.focus();
+      groupInputRef.current.select();
+    }
+  }, [isEditingGroup]);
 
-  const handleToggle = () => {
-    updateNestedSetting('sidebar', 'visible', !visible);
+  const handleNewSession = () => createSession();
+  const handleToggle = () => updateNestedSetting('sidebar', 'visible', !visible);
+
+  const handleGroupRename = () => {
+    const trimmed = editGroupName.trim();
+    if (trimmed) setGroupName(trimmed);
+    setIsEditingGroup(false);
   };
 
   if (!visible) {
@@ -42,7 +53,6 @@ export function Sidebar() {
     );
   }
 
-  // Global index counter for Ctrl+1~9
   let globalIndex = 0;
 
   return (
@@ -53,19 +63,10 @@ export function Sidebar() {
       <div className="sidebar__header">
         <span className="sidebar__title">Sessions</span>
         <div className="sidebar__actions">
-          <button
-            className="sidebar__button"
-            onClick={handleNewSession}
-            aria-label="New session"
-            title="New session (Ctrl+N)"
-          >
+          <button className="sidebar__button" onClick={handleNewSession} title="New session (Ctrl+N)">
             <Plus size={14} />
           </button>
-          <button
-            className="sidebar__button"
-            onClick={handleToggle}
-            aria-label="Hide sidebar"
-          >
+          <button className="sidebar__button" onClick={handleToggle}>
             <ChevronLeft size={14} />
           </button>
         </div>
@@ -81,22 +82,50 @@ export function Sidebar() {
           </div>
         ) : (
           <>
-            {/* Split group */}
             {splitSessions.length > 0 && (
               <div className={`sidebar__group ${activeInSplit ? 'sidebar__group--active' : ''}`}>
                 <div
                   className="sidebar__group-header"
                   onClick={() => {
-                    if (splitSessions.length > 0) {
-                      setActiveSession(splitSessions[0].id);
-                    }
+                    if (splitSessions.length > 0) setActiveSession(splitSessions[0].id);
                   }}
                 >
+                  <button
+                    className="sidebar__group-chevron"
+                    onClick={(e) => { e.stopPropagation(); setGroupCollapsed(!groupCollapsed); }}
+                  >
+                    {groupCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+                  </button>
                   <Layers size={12} />
-                  <span>Split Group</span>
+                  {isEditingGroup ? (
+                    <input
+                      ref={groupInputRef}
+                      className="sidebar__group-name-input"
+                      value={editGroupName}
+                      onChange={(e) => setEditGroupName(e.target.value)}
+                      onBlur={handleGroupRename}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleGroupRename();
+                        if (e.key === 'Escape') setIsEditingGroup(false);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span
+                      className="sidebar__group-name"
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        setEditGroupName(groupName);
+                        setIsEditingGroup(true);
+                      }}
+                    >
+                      {groupName}
+                    </span>
+                  )}
                   <span className="sidebar__group-count">{splitSessions.length}</span>
                 </div>
-                {splitSessions.map((session) => {
+
+                {!groupCollapsed && splitSessions.map((session) => {
                   globalIndex++;
                   return (
                     <SessionItem
@@ -111,7 +140,6 @@ export function Sidebar() {
               </div>
             )}
 
-            {/* Standalone sessions */}
             {standaloneSessions.map((session) => {
               globalIndex++;
               return (
