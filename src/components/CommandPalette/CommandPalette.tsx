@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Plus, Settings, Bell, Sidebar,
   X as XIcon, Layout,
@@ -8,6 +8,8 @@ import { useSessionStore } from '../../stores/sessionStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { useLayoutStore } from '../../stores/layoutStore';
+import { useWorkspaceStore } from '../../stores/workspaceStore';
+import type { LayoutNode } from '../../stores/layoutStore';
 import './CommandPalette.css';
 
 interface Command {
@@ -33,6 +35,47 @@ export function CommandPalette({ visible, onClose, onOpenSettings }: CommandPale
   const { sessions, createSession, setActiveSession, closeSession } = useSessionStore();
   const { settings } = useSettingsStore();
   const { togglePanel: toggleNotifications } = useNotificationStore();
+
+  // Apply a workspace preset: create sessions and set layout
+  const applyPreset = useCallback((presetName: string) => {
+    const preset = useWorkspaceStore.getState().getPreset(presetName);
+    if (!preset) return;
+
+    if (!preset.layout) {
+      // Focus mode: single session
+      useLayoutStore.getState().setLayout(null);
+      if (sessions.size === 0) createSession();
+      return;
+    }
+
+    // Create required sessions
+    const sessionIds: string[] = [];
+    for (let i = 0; i < preset.sessionCount; i++) {
+      sessionIds.push(useSessionStore.getState().createSession());
+    }
+
+    // Replace placeholder IDs in layout with real session IDs
+    const resolveLayout = (node: any): LayoutNode => {
+      if (node.type === 'terminal') {
+        const match = node.sessionId?.match(/__placeholder_(\d+)__/);
+        if (match) {
+          const idx = parseInt(match[1]) - 1;
+          return { type: 'terminal', sessionId: sessionIds[idx] || sessionIds[0] };
+        }
+        return node;
+      }
+      if (node.type === 'split' && node.children) {
+        return {
+          ...node,
+          children: node.children.map(resolveLayout),
+        };
+      }
+      return node;
+    };
+
+    const resolvedLayout = resolveLayout(preset.layout);
+    useLayoutStore.getState().setLayout(resolvedLayout);
+  }, [sessions, createSession]);
 
   // Build command list
   const commands = useMemo((): Command[] => {
@@ -173,6 +216,17 @@ export function CommandPalette({ visible, onClose, onOpenSettings }: CommandPale
         },
         category: 'Split',
       },
+      // Workspace presets
+      ...useWorkspaceStore.getState().presets.map((preset) => ({
+        id: `preset-${preset.name}`,
+        label: `Workspace: ${preset.name}`,
+        icon: <Layout size={14} />,
+        action: () => {
+          applyPreset(preset.name);
+          onClose();
+        },
+        category: 'Workspace',
+      })),
     ];
     return cmds;
   }, [sessions, settings, createSession, setActiveSession, closeSession, toggleNotifications, onClose, onOpenSettings]);

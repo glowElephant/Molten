@@ -155,13 +155,14 @@ function App() {
             // Split mode: render split view
             <SplitView node={layout} />
           ) : hasAnySessions ? (
-            // Single mode: show active session
+            // Single mode: show active session with optional header
             sessionList.map((session) => (
               <div
                 key={session.id}
                 className="app__terminal-wrapper"
                 style={{
                   display: session.id === activeSessionId ? 'flex' : 'none',
+                  flexDirection: 'column',
                   flex: 1,
                   minHeight: 0,
                 }}
