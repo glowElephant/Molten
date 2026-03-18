@@ -15,6 +15,7 @@ import { useLayoutStore } from './stores/layoutStore';
 import { useSessionNotifications } from './hooks/useSessionNotifications';
 import { useSettingsPersistence } from './hooks/useSettingsPersistence';
 import { useWorkspacePersistence } from './hooks/useWorkspacePersistence';
+import { initTriggerEngine } from './utils/triggerEngine';
 import './utils/selfCapture';
 import './App.css';
 
@@ -22,6 +23,8 @@ function App() {
   useSessionNotifications();
   useSettingsPersistence();
   useWorkspacePersistence();
+
+  useEffect(() => { initTriggerEngine(); }, []);
 
   const { settings } = useSettingsStore();
   const { sidebar, titleBar } = settings;

@@ -103,12 +103,32 @@ export interface TitleBarConfig {
   position: 'top' | 'bottom' | 'left' | 'right' | 'hidden';
 }
 
+// Trigger types
+export interface Trigger {
+  id: string;
+  name: string;
+  pattern: string;
+  flags: string;
+  enabled: boolean;
+  scope: 'global' | string;  // 'global' or sessionId
+  actions: TriggerAction[];
+  cooldownMs: number;
+}
+
+export type TriggerActionType = 'notification' | 'highlight' | 'command' | 'sound';
+
+export interface TriggerAction {
+  type: TriggerActionType;
+  config: Record<string, unknown>;
+}
+
 // Workspace persistence types
 export interface WorkspaceSnapshot {
   version: 1;
   savedAt: string;
   activeSessionId: string | null;
   sessionOrder: string[];
+  triggers?: Trigger[];
   sessions: Array<{
     id: string;
     name: string;
@@ -138,4 +158,5 @@ export type MoltenEventMap = {
   'notification:received': MoltenNotification;
   'workspace:loaded': { name: string };
   'theme:changed': { theme: string };
+  'trigger:matched': { triggerId: string; sessionId: string; matchText: string };
 };

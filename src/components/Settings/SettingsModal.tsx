@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { X, Settings } from 'lucide-react';
+import { X, Settings, Plus, Trash2 } from 'lucide-react';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useTriggerStore, generateTriggerId } from '../../stores/triggerStore';
+import type { Trigger } from '../../types';
 import './SettingsModal.css';
 
 interface SettingsModalProps {
@@ -8,7 +10,7 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
-type SettingsTab = 'general' | 'terminal' | 'notifications' | 'appearance';
+type SettingsTab = 'general' | 'terminal' | 'notifications' | 'appearance' | 'triggers';
 
 export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   const { settings, updateNestedSetting, resetSettings } = useSettingsStore();
@@ -21,6 +23,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     { id: 'terminal', label: 'Terminal' },
     { id: 'notifications', label: 'Notifications' },
     { id: 'appearance', label: 'Appearance' },
+    { id: 'triggers', label: 'Triggers' },
   ];
 
   return (
@@ -220,6 +223,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                 </SettingRow>
               </div>
             )}
+            {activeTab === 'triggers' && <TriggersTab />}
           </div>
         </div>
 
@@ -264,5 +268,176 @@ function ToggleSwitch({
     >
       <span className="toggle-switch__thumb" />
     </button>
+  );
+}
+
+function TriggersTab() {
+  const { triggers, addTrigger, updateTrigger, removeTrigger, toggleTrigger } = useTriggerStore();
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleAdd = () => {
+    const trigger: Trigger = {
+      id: generateTriggerId(),
+      name: 'New Trigger',
+      pattern: '',
+      flags: 'i',
+      enabled: true,
+      scope: 'global',
+      actions: [{ type: 'notification', config: {} }],
+      cooldownMs: 5000,
+    };
+    addTrigger(trigger);
+    setEditingId(trigger.id);
+  };
+
+  const isValidRegex = (pattern: string, flags: string) => {
+    try {
+      new RegExp(pattern, flags);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  return (
+    <div className="settings-section">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <h3 style={{ margin: 0 }}>Triggers</h3>
+        <button className="settings-modal__add-btn" onClick={handleAdd}>
+          <Plus size={12} /> Add Trigger
+        </button>
+      </div>
+
+      {triggers.length === 0 && (
+        <p style={{ color: 'var(--color-text-muted)', fontSize: 12, textAlign: 'center', padding: 20 }}>
+          No triggers yet. Add one to match patterns in terminal output.
+        </p>
+      )}
+
+      {triggers.map((trigger) => {
+        const isEditing = editingId === trigger.id;
+        const valid = !trigger.pattern || isValidRegex(trigger.pattern, trigger.flags);
+
+        return (
+          <div
+            key={trigger.id}
+            className="trigger-item"
+            style={{
+              padding: '10px 12px',
+              margin: '6px 0',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 6,
+              background: trigger.enabled ? 'rgba(255,255,255,0.02)' : 'transparent',
+              opacity: trigger.enabled ? 1 : 0.5,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: isEditing ? 8 : 0 }}>
+              <ToggleSwitch
+                checked={trigger.enabled}
+                onChange={() => toggleTrigger(trigger.id)}
+              />
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={trigger.name}
+                  onChange={(e) => updateTrigger(trigger.id, { name: e.target.value })}
+                  style={{ flex: 1, fontSize: 13 }}
+                  placeholder="Trigger name"
+                />
+              ) : (
+                <span
+                  style={{ flex: 1, fontSize: 13, cursor: 'pointer' }}
+                  onClick={() => setEditingId(trigger.id)}
+                >
+                  {trigger.name}
+                </span>
+              )}
+              {!isEditing && (
+                <code style={{ fontSize: 11, color: valid ? 'var(--color-accent)' : '#ef4444', opacity: 0.7 }}>
+                  /{trigger.pattern || '...'}/{trigger.flags}
+                </code>
+              )}
+              <button
+                className="settings-modal__icon-btn"
+                onClick={() => setEditingId(isEditing ? null : trigger.id)}
+                title={isEditing ? 'Done' : 'Edit'}
+              >
+                {isEditing ? '✓' : '✎'}
+              </button>
+              <button
+                className="settings-modal__icon-btn settings-modal__icon-btn--danger"
+                onClick={() => removeTrigger(trigger.id)}
+                title="Delete"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+
+            {isEditing && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 44 }}>
+                <SettingRow label="Pattern (regex)">
+                  <input
+                    type="text"
+                    value={trigger.pattern}
+                    onChange={(e) => updateTrigger(trigger.id, { pattern: e.target.value })}
+                    placeholder="error|fail|exception"
+                    style={{ borderColor: valid ? undefined : '#ef4444' }}
+                  />
+                </SettingRow>
+                <SettingRow label="Flags">
+                  <input
+                    type="text"
+                    value={trigger.flags}
+                    onChange={(e) => updateTrigger(trigger.id, { flags: e.target.value })}
+                    style={{ width: 60 }}
+                  />
+                </SettingRow>
+                <SettingRow label="Scope">
+                  <select
+                    value={trigger.scope}
+                    onChange={(e) => updateTrigger(trigger.id, { scope: e.target.value })}
+                  >
+                    <option value="global">All sessions</option>
+                  </select>
+                </SettingRow>
+                <SettingRow label="Action">
+                  <select
+                    value={trigger.actions[0]?.type || 'notification'}
+                    onChange={(e) => updateTrigger(trigger.id, {
+                      actions: [{ type: e.target.value as any, config: {} }],
+                    })}
+                  >
+                    <option value="notification">Notification</option>
+                    <option value="command">Run command</option>
+                    <option value="sound">Play sound</option>
+                  </select>
+                </SettingRow>
+                {trigger.actions[0]?.type === 'command' && (
+                  <SettingRow label="Command">
+                    <input
+                      type="text"
+                      value={(trigger.actions[0]?.config?.command as string) || ''}
+                      onChange={(e) => updateTrigger(trigger.id, {
+                        actions: [{ type: 'command', config: { command: e.target.value, sessionId: 'self' } }],
+                      })}
+                      placeholder="echo 'triggered!'"
+                    />
+                  </SettingRow>
+                )}
+                <SettingRow label="Cooldown (ms)">
+                  <input
+                    type="number"
+                    min={0}
+                    step={1000}
+                    value={trigger.cooldownMs}
+                    onChange={(e) => updateTrigger(trigger.id, { cooldownMs: Number(e.target.value) })}
+                  />
+                </SettingRow>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }

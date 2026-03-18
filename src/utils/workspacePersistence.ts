@@ -1,5 +1,6 @@
 import { useSessionStore } from '../stores/sessionStore';
 import { useLayoutStore } from '../stores/layoutStore';
+import { useTriggerStore } from '../stores/triggerStore';
 import type { WorkspaceSnapshot } from '../types';
 import type { Session } from '../types';
 import type { LayoutGroup } from '../stores/layoutStore';
@@ -7,12 +8,14 @@ import type { LayoutGroup } from '../stores/layoutStore';
 export function takeSnapshot(): WorkspaceSnapshot {
   const { sessions, sessionOrder, activeSessionId } = useSessionStore.getState();
   const { groups } = useLayoutStore.getState();
+  const { triggers } = useTriggerStore.getState();
 
   return {
     version: 1,
     savedAt: new Date().toISOString(),
     activeSessionId,
     sessionOrder,
+    triggers,
     sessions: Array.from(sessions.values()).map((s) => ({
       id: s.id,
       name: s.name,
@@ -69,6 +72,11 @@ export function restoreSnapshot(snapshot: WorkspaceSnapshot): boolean {
   // Restore layout groups
   if (snapshot.groups && snapshot.groups.length > 0) {
     useLayoutStore.getState().restoreGroups(snapshot.groups as LayoutGroup[]);
+  }
+
+  // Restore triggers
+  if (snapshot.triggers && snapshot.triggers.length > 0) {
+    useTriggerStore.getState().setTriggers(snapshot.triggers);
   }
 
   return true;

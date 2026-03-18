@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useSessionStore } from '../stores/sessionStore';
 import { useLayoutStore } from '../stores/layoutStore';
+import { useTriggerStore } from '../stores/triggerStore';
 import { takeSnapshot, restoreSnapshot } from '../utils/workspacePersistence';
 
 /**
@@ -15,6 +16,7 @@ export function useWorkspacePersistence() {
   const sessionOrder = useSessionStore((s) => s.sessionOrder);
   const activeSessionId = useSessionStore((s) => s.activeSessionId);
   const groups = useLayoutStore((s) => s.groups);
+  const triggers = useTriggerStore((s) => s.triggers);
 
   // Load workspace on startup
   useEffect(() => {
@@ -47,7 +49,7 @@ export function useWorkspacePersistence() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [sessions, sessionOrder, activeSessionId, groups]);
+  }, [sessions, sessionOrder, activeSessionId, groups, triggers]);
 
   // Save on window close (guaranteed via Tauri's onCloseRequested)
   useEffect(() => {
