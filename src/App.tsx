@@ -1,50 +1,44 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
-import "./App.css";
+import { TitleBar } from './components/TitleBar';
+import { Sidebar } from './components/Sidebar';
+import { StatusBar } from './components/StatusBar';
+import { useSettingsStore } from './stores/settingsStore';
+import './App.css';
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  const { settings } = useSettingsStore();
+  const { sidebar, titleBar } = settings;
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <div className="app" data-theme={settings.theme}>
+      {titleBar.position === 'top' && <TitleBar position="top" />}
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="app__body">
+        {titleBar.position === 'left' && <TitleBar position="left" />}
+
+        {sidebar.position === 'left' && <Sidebar />}
+
+        <main className="app__content">
+          <div className="app__placeholder">
+            <div className="app__placeholder-logo">◆</div>
+            <h1 className="app__placeholder-title">Molten</h1>
+            <p className="app__placeholder-subtitle">
+              The liquid terminal for AI coding agents
+            </p>
+            <p className="app__placeholder-hint">
+              Press <kbd>Ctrl+N</kbd> to create a new session
+            </p>
+          </div>
+        </main>
+
+        {sidebar.position === 'right' && <Sidebar />}
+        {titleBar.position === 'right' && <TitleBar position="right" />}
       </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+      {sidebar.position === 'bottom' && <Sidebar />}
+      {titleBar.position === 'bottom' && <TitleBar position="bottom" />}
+
+      <StatusBar />
+    </div>
   );
 }
 

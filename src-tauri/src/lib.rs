@@ -1,14 +1,25 @@
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+mod commands;
+mod pty;
+
+use commands::PtyState;
+use pty::PtyManager;
+use std::sync::Arc;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let pty_manager = Arc::new(PtyManager::new());
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet])
+        .manage(PtyState(pty_manager))
+        .invoke_handler(tauri::generate_handler![
+            commands::pty_spawn,
+            commands::pty_write,
+            commands::pty_resize,
+            commands::pty_kill,
+            commands::pty_has_session,
+            commands::pty_session_count,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

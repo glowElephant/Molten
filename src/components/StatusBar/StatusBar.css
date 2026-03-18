@@ -1,0 +1,77 @@
+.statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  padding: 0 8px;
+  background: rgba(10, 10, 15, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.statusbar__left,
+.statusbar__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.statusbar__item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-text-secondary, #94a3b8);
+}
+
+.statusbar__item--muted {
+  color: var(--color-text-muted, #475569);
+}
+
+.statusbar__status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.statusbar__notification-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted, #475569);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.statusbar__notification-button:hover {
+  color: var(--color-text-primary, #e2e8f0);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.statusbar__notification-button--active {
+  color: var(--color-accent, #7c3aed);
+}
+
+.statusbar__badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  background: #ef4444;
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 14px;
+  text-align: center;
+  border-radius: 7px;
+}
