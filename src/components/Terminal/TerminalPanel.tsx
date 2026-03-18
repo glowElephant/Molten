@@ -157,17 +157,27 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
       }
     });
 
-    // Listen for PTY output
+    // Listen for PTY output — throttle status updates to prevent re-render cascade
+    let lastStatusUpdate = 0;
+    let lastStatus: string | null = null;
+    const STATUS_THROTTLE_MS = 2000;
+
     const unlistenOutput = listen<string>(`pty-output-${sessionId}`, (event) => {
       const decoded = base64Decode(event.payload);
       terminal.write(decoded);
 
-      // Detect agent status from output
       const text = new TextDecoder().decode(decoded);
       const session = getSession(sessionId);
       const status = detectStatus(text, session?.agentType || null);
-      if (status) {
-        updateStatus(sessionId, status);
+
+      // Only update status if changed AND throttle period passed
+      if (status && status !== lastStatus) {
+        const now = Date.now();
+        if (now - lastStatusUpdate > STATUS_THROTTLE_MS) {
+          lastStatus = status;
+          lastStatusUpdate = now;
+          updateStatus(sessionId, status);
+        }
       }
 
       eventBus.emit('session:output', { sessionId, data: text });
