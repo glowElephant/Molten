@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useSessionStore } from '../../stores/sessionStore';
+import { useLayoutStore } from '../../stores/layoutStore';
 import { getStatusColor, getStatusLabel } from '../../utils/statusDetector';
 import type { Session } from '../../types';
 
@@ -26,6 +27,7 @@ export function SessionItem({ session, index, isActive, onClick }: SessionItemPr
 
   const handleClose = (e: React.MouseEvent) => {
     e.stopPropagation();
+    useLayoutStore.getState().removeFromLayout(session.id);
     closeSession(session.id);
   };
 
