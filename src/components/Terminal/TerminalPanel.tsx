@@ -144,6 +144,10 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
 
     fitAddon.fit();
 
+    // Delayed re-fit to ensure correct dimensions after layout settles
+    setTimeout(() => { try { fitAddon.fit(); } catch {} }, 300);
+    setTimeout(() => { try { fitAddon.fit(); } catch {} }, 1000);
+
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
 
