@@ -252,16 +252,3 @@ body {
   transition-duration: 0s !important;
 }
 
-/* ========== Custom Window Shapes (F2.6) ========== */
-[data-shape="rounded"] {
-  border-radius: 16px;
-}
-
-[data-shape="extra-rounded"] {
-  border-radius: 24px;
-}
-
-[data-shape="sharp"] {
-  border-radius: 0;
-  border: none;
-}

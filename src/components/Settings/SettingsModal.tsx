@@ -13,7 +13,7 @@ interface SettingsModalProps {
 type SettingsTab = 'general' | 'terminal' | 'notifications' | 'appearance' | 'triggers';
 
 export function SettingsModal({ visible, onClose }: SettingsModalProps) {
-  const { settings, updateSetting, updateNestedSetting, resetSettings } = useSettingsStore();
+  const { settings, updateNestedSetting, resetSettings } = useSettingsStore();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
   if (!visible) return null;
@@ -222,20 +222,6 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                   </select>
                 </SettingRow>
 
-                <h3>Window Shape</h3>
-                <SettingRow label="Shape">
-                  <select
-                    value={settings.windowShape}
-                    onChange={(e) =>
-                      updateSetting('windowShape', e.target.value as any)
-                    }
-                  >
-                    <option value="default">Default</option>
-                    <option value="rounded">Rounded</option>
-                    <option value="extra-rounded">Extra Rounded</option>
-                    <option value="sharp">Sharp</option>
-                  </select>
-                </SettingRow>
               </div>
             )}
             {activeTab === 'triggers' && <TriggersTab />}
