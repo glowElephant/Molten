@@ -21,34 +21,21 @@ function App() {
   const { sidebar, titleBar } = settings;
   const { sessions, activeSessionId, createSession } = useSessionStore();
   const { togglePanel: toggleNotifications } = useNotificationStore();
-  const { layout, setSingleSession } = useLayoutStore();
+  const { layout, setLayout } = useLayoutStore();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [paletteVisible, setPaletteVisible] = useState(false);
 
-  // Sync layout with session creation/deletion
-  useEffect(() => {
-    const sessionIds = Array.from(sessions.keys());
-    if (sessionIds.length === 0) {
-      useLayoutStore.getState().setLayout(null);
-      return;
-    }
-    // If no layout exists but sessions do, set the first session
-    if (!layout && sessionIds.length > 0) {
-      setSingleSession(sessionIds[sessionIds.length - 1]);
-    }
-  }, [sessions, layout, setSingleSession]);
+  // When active session changes and we're NOT in split mode, clear the split layout
+  const isSplitMode = layout !== null && layout.type === 'split';
 
-  // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+N: New session (single view, no split)
       if (e.ctrlKey && !e.shiftKey && e.key === 'n') {
         e.preventDefault();
-        const id = createSession();
-        // If no split, just show new session. If split exists, add to layout.
-        const currentLayout = useLayoutStore.getState().layout;
-        if (!currentLayout) {
-          useLayoutStore.getState().setSingleSession(id);
-        }
+        createSession();
+        // Exit split mode — new session takes full screen
+        setLayout(null);
       }
       if (e.ctrlKey && e.key === 'b') {
         e.preventDefault();
@@ -68,32 +55,60 @@ function App() {
         e.preventDefault();
         setPaletteVisible((v) => !v);
       }
+      // Ctrl+W: Close active session
       if (e.ctrlKey && e.key === 'w') {
         e.preventDefault();
-        const { activeSessionId, closeSession } = useSessionStore.getState();
-        if (activeSessionId) {
-          useLayoutStore.getState().removeFromLayout(activeSessionId);
-          closeSession(activeSessionId);
+        const state = useSessionStore.getState();
+        if (state.activeSessionId) {
+          useLayoutStore.getState().removeFromLayout(state.activeSessionId);
+          state.closeSession(state.activeSessionId);
         }
       }
       // Ctrl+D: Split vertical (new session to the right)
       if (e.ctrlKey && !e.shiftKey && e.key === 'd') {
         e.preventDefault();
+        const currentActive = useSessionStore.getState().activeSessionId;
         const id = useSessionStore.getState().createSession();
-        useLayoutStore.getState().splitActive('horizontal', id);
+        // If not in split mode, create initial split from active + new
+        const currentLayout = useLayoutStore.getState().layout;
+        if (!currentLayout && currentActive) {
+          useLayoutStore.getState().setLayout({
+            type: 'split',
+            direction: 'horizontal',
+            children: [
+              { type: 'terminal', sessionId: currentActive },
+              { type: 'terminal', sessionId: id },
+            ],
+          });
+        } else {
+          useLayoutStore.getState().splitActive('horizontal', id);
+        }
       }
       // Ctrl+Shift+D: Split horizontal (new session below)
       if (e.ctrlKey && e.shiftKey && e.key === 'D') {
         e.preventDefault();
+        const currentActive = useSessionStore.getState().activeSessionId;
         const id = useSessionStore.getState().createSession();
-        useLayoutStore.getState().splitActive('vertical', id);
+        const currentLayout = useLayoutStore.getState().layout;
+        if (!currentLayout && currentActive) {
+          useLayoutStore.getState().setLayout({
+            type: 'split',
+            direction: 'vertical',
+            children: [
+              { type: 'terminal', sessionId: currentActive },
+              { type: 'terminal', sessionId: id },
+            ],
+          });
+        } else {
+          useLayoutStore.getState().splitActive('vertical', id);
+        }
       }
       if (e.ctrlKey && e.key >= '1' && e.key <= '9') {
         e.preventDefault();
         const idx = parseInt(e.key) - 1;
-        const sessionList = Array.from(useSessionStore.getState().sessions.keys());
-        if (idx < sessionList.length) {
-          useSessionStore.getState().setActiveSession(sessionList[idx]);
+        const keys = Array.from(useSessionStore.getState().sessions.keys());
+        if (idx < keys.length) {
+          useSessionStore.getState().setActiveSession(keys[idx]);
         }
       }
       if (e.ctrlKey && e.key === 'Tab') {
@@ -113,9 +128,10 @@ function App() {
     };
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [createSession, toggleNotifications]);
+  }, [createSession, toggleNotifications, setLayout]);
 
-  const hasAnySessions = sessions.size > 0;
+  const sessionList = Array.from(sessions.values());
+  const hasAnySessions = sessionList.length > 0;
 
   return (
     <div className="app" data-theme={settings.theme}>
@@ -126,11 +142,12 @@ function App() {
         {sidebar.position === 'left' && <Sidebar />}
 
         <main className="app__content">
-          {layout ? (
+          {isSplitMode && layout ? (
+            // Split mode: show all split panes
             <SplitView node={layout} />
           ) : hasAnySessions ? (
-            // Fallback: show active session without split
-            Array.from(sessions.values()).map((session) => (
+            // Single mode: show active session only
+            sessionList.map((session) => (
               <div
                 key={session.id}
                 className="app__terminal-wrapper"
