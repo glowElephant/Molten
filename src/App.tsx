@@ -3,14 +3,17 @@ import { TitleBar } from './components/TitleBar';
 import { Sidebar } from './components/Sidebar';
 import { StatusBar } from './components/StatusBar';
 import { TerminalPanel } from './components/Terminal';
+import { NotificationPanel } from './components/Notification';
 import { useSettingsStore } from './stores/settingsStore';
 import { useSessionStore } from './stores/sessionStore';
+import { useNotificationStore } from './stores/notificationStore';
 import './App.css';
 
 function App() {
   const { settings } = useSettingsStore();
   const { sidebar, titleBar } = settings;
   const { sessions, activeSessionId, createSession } = useSessionStore();
+  const { togglePanel: toggleNotifications } = useNotificationStore();
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -27,10 +30,15 @@ function App() {
           !useSettingsStore.getState().settings.sidebar.visible
         );
       }
+      // Ctrl+Shift+N: Toggle notification panel
+      if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+        e.preventDefault();
+        toggleNotifications();
+      }
     };
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [createSession]);
+  }, [createSession, toggleNotifications]);
 
   const sessionList = Array.from(sessions.values());
   const hasAnySessions = sessionList.length > 0;
@@ -70,6 +78,8 @@ function App() {
               </p>
             </div>
           )}
+
+          <NotificationPanel />
         </main>
 
         {sidebar.position === 'right' && <Sidebar />}

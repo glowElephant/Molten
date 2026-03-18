@@ -1,5 +1,6 @@
+import { useState, useEffect } from 'react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Minus, X, Maximize2 } from 'lucide-react';
+import { Minus, X, Maximize2, Minimize2 } from 'lucide-react';
 import './TitleBar.css';
 
 interface TitleBarProps {
@@ -10,6 +11,21 @@ export function TitleBar({ position = 'top' }: TitleBarProps) {
   if (position === 'hidden') return null;
 
   const appWindow = getCurrentWindow();
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  useEffect(() => {
+    // Check initial state
+    appWindow.isMaximized().then(setIsMaximized);
+
+    // Listen for resize events to update icon
+    const unlisten = appWindow.onResized(() => {
+      appWindow.isMaximized().then(setIsMaximized);
+    });
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
 
   const handleMinimize = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -19,7 +35,6 @@ export function TitleBar({ position = 'top' }: TitleBarProps) {
   const handleMaximize = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    const isMaximized = await appWindow.isMaximized();
     if (isMaximized) {
       appWindow.unmaximize();
     } else {
@@ -55,9 +70,9 @@ export function TitleBar({ position = 'top' }: TitleBarProps) {
         <button
           className="titlebar__button titlebar__button--maximize"
           onClick={handleMaximize}
-          aria-label="Maximize"
+          aria-label={isMaximized ? 'Restore' : 'Maximize'}
         >
-          <Maximize2 size={12} />
+          {isMaximized ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
         </button>
         <button
           className="titlebar__button titlebar__button--close"
