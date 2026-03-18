@@ -62,6 +62,10 @@
   font-size: 13px;
   font-family: var(--font-mono);
   outline: none;
+  resize: none;
+  min-height: 28px;
+  max-height: 100px;
+  line-height: 1.4;
 }
 
 .terminal-panel__ime-input:focus {

@@ -245,7 +245,7 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
 
   const [imeText, setImeText] = useState('');
   const [imeVisible, setImeVisible] = useState(false);
-  const imeInputRef = useRef<HTMLInputElement>(null);
+  const imeInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Ctrl+I toggles IME input bar
   useEffect(() => {
@@ -264,7 +264,7 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
 
   const handleImeSend = () => {
     if (!imeText) return;
-    invoke('pty_write', { sessionId, data: imeText }).catch(console.error);
+    invoke('pty_write', { sessionId, data: imeText + '\n' }).catch(console.error);
     setImeText('');
     imeInputRef.current?.focus();
   };
@@ -274,23 +274,29 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
       <div className="terminal-panel__container" ref={containerRef} />
       {imeVisible && (
         <div className="terminal-panel__ime-bar">
-          <input
+          <textarea
             ref={imeInputRef}
             className="terminal-panel__ime-input"
             value={imeText}
             onChange={(e) => setImeText(e.target.value)}
+            rows={1}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !(e.nativeEvent as KeyboardEvent).isComposing) {
+              if (e.key === 'Enter' && !e.shiftKey && !(e.nativeEvent as KeyboardEvent).isComposing) {
                 e.preventDefault();
                 handleImeSend();
               }
               if (e.key === 'Escape') {
                 setImeVisible(false);
-                // Return focus to terminal
                 terminalRef.current?.focus();
               }
             }}
-            placeholder="한글 입력 (Enter로 전송, Esc로 닫기)"
+            onInput={(e) => {
+              // Auto-resize textarea
+              const el = e.currentTarget;
+              el.style.height = 'auto';
+              el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+            }}
+            placeholder="한글 입력 (Enter 전송, Shift+Enter 개행, Esc 닫기)"
           />
           <button className="terminal-panel__ime-send" onClick={handleImeSend}>
             전송
