@@ -1,24 +1,29 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { TitleBar } from './components/TitleBar';
 import { Sidebar } from './components/Sidebar';
 import { StatusBar } from './components/StatusBar';
 import { TerminalPanel } from './components/Terminal';
 import { NotificationPanel } from './components/Notification';
+import { SettingsModal } from './components/Settings';
 import { useSettingsStore } from './stores/settingsStore';
 import { useSessionStore } from './stores/sessionStore';
 import { useNotificationStore } from './stores/notificationStore';
+import { useSessionNotifications } from './hooks/useSessionNotifications';
 import './App.css';
 
 function App() {
+  useSessionNotifications();
+
   const { settings } = useSettingsStore();
   const { sidebar, titleBar } = settings;
   const { sessions, activeSessionId, createSession } = useSessionStore();
   const { togglePanel: toggleNotifications } = useNotificationStore();
+  const [settingsVisible, setSettingsVisible] = useState(false);
 
   // Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === 'n') {
+      if (e.ctrlKey && !e.shiftKey && e.key === 'n') {
         e.preventDefault();
         createSession();
       }
@@ -30,10 +35,18 @@ function App() {
           !useSettingsStore.getState().settings.sidebar.visible
         );
       }
-      // Ctrl+Shift+N: Toggle notification panel
       if (e.ctrlKey && e.shiftKey && e.key === 'N') {
         e.preventDefault();
         toggleNotifications();
+      }
+      // Ctrl+, : Open settings
+      if (e.ctrlKey && e.key === ',') {
+        e.preventDefault();
+        setSettingsVisible((v) => !v);
+      }
+      // Escape: Close modals
+      if (e.key === 'Escape') {
+        setSettingsVisible(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown, true);
@@ -89,6 +102,11 @@ function App() {
       {sidebar.position === 'bottom' && <Sidebar />}
       {titleBar.position === 'bottom' && <TitleBar position="bottom" />}
       <StatusBar />
+
+      <SettingsModal
+        visible={settingsVisible}
+        onClose={() => setSettingsVisible(false)}
+      />
     </div>
   );
 }

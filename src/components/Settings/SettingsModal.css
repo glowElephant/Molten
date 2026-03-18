@@ -1,0 +1,227 @@
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+}
+
+.settings-modal {
+  width: 560px;
+  max-height: 80vh;
+  background: rgba(20, 20, 35, 0.98);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.settings-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.settings-modal__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary, #e2e8f0);
+}
+
+.settings-modal__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted, #475569);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-modal__close:hover {
+  color: var(--color-text-primary, #e2e8f0);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.settings-modal__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.settings-modal__tabs {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.settings-modal__tab {
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted, #475569);
+  text-align: left;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-modal__tab:hover {
+  color: var(--color-text-secondary, #94a3b8);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.settings-modal__tab--active {
+  color: var(--color-text-primary, #e2e8f0);
+  background: rgba(124, 58, 237, 0.12);
+}
+
+.settings-modal__content {
+  flex: 1;
+  padding: 16px 20px;
+  overflow-y: auto;
+}
+
+.settings-modal__footer {
+  padding: 12px 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-modal__reset {
+  padding: 6px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: var(--color-text-muted, #475569);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-modal__reset:hover {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Settings Section */
+
+.settings-section h3 {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--color-text-muted, #475569);
+  margin-bottom: 8px;
+  margin-top: 16px;
+}
+
+.settings-section h3:first-child {
+  margin-top: 0;
+}
+
+/* Setting Row */
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  gap: 12px;
+}
+
+.setting-row__label {
+  font-size: 13px;
+  color: var(--color-text-secondary, #94a3b8);
+  flex-shrink: 0;
+}
+
+.setting-row__control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.setting-row__control select,
+.setting-row__control input[type="text"],
+.setting-row__control input[type="number"] {
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: var(--color-text-primary, #e2e8f0);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.setting-row__control select:focus,
+.setting-row__control input:focus {
+  border-color: var(--color-accent, #7c3aed);
+}
+
+.setting-row__control input[type="range"] {
+  width: 120px;
+  accent-color: var(--color-accent, #7c3aed);
+}
+
+.settings-value {
+  font-size: 12px;
+  color: var(--color-text-muted, #475569);
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Toggle Switch */
+
+.toggle-switch {
+  width: 36px;
+  height: 20px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s ease;
+  padding: 0;
+}
+
+.toggle-switch--on {
+  background: var(--color-accent, #7c3aed);
+}
+
+.toggle-switch__thumb {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s ease;
+}
+
+.toggle-switch--on .toggle-switch__thumb {
+  transform: translateX(16px);
+}
