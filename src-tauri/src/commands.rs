@@ -2,6 +2,10 @@ use crate::pty::{PtyConfig, PtyManager};
 use std::sync::Arc;
 use tauri::State;
 
+#[cfg(debug_assertions)]
+use crate::api_server::CommandQueue;
+use std::sync::Mutex;
+
 /// Tauri state wrapper for PTY manager
 pub struct PtyState(pub Arc<PtyManager>);
 
@@ -43,4 +47,14 @@ pub fn pty_has_session(session_id: String, state: State<'_, PtyState>) -> bool {
 #[tauri::command]
 pub fn pty_session_count(state: State<'_, PtyState>) -> usize {
     state.0.session_count()
+}
+
+/// Dev-only: Poll for pending API commands
+#[cfg(debug_assertions)]
+#[tauri::command]
+pub fn poll_commands(state: State<'_, Arc<CommandQueue>>) -> Vec<String> {
+    let mut cmds = state.commands.lock().unwrap();
+    let result = cmds.clone();
+    cmds.clear();
+    result
 }
