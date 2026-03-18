@@ -1,8 +1,4 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { Terminal } from '@xterm/xterm';
-import { FitAddon } from '@xterm/addon-fit';
-import { SearchAddon } from '@xterm/addon-search';
-import { WebglAddon } from '@xterm/addon-webgl';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { useSettingsStore } from '../../stores/settingsStore';
@@ -10,6 +6,14 @@ import { useSessionStore } from '../../stores/sessionStore';
 import { useMessageBusStore } from '../../stores/messageBusStore';
 import { detectStatus } from '../../utils/statusDetector';
 import { eventBus } from '../../utils/eventBus';
+import {
+  getTerminal,
+  createTerminal,
+  attachTerminal,
+  detachTerminal,
+  isWired,
+  markWired,
+} from '../../utils/terminalManager';
 import '@xterm/xterm/css/xterm.css';
 import './TerminalPanel.css';
 
@@ -19,18 +23,14 @@ interface TerminalPanelProps {
 
 export function TerminalPanel({ sessionId }: TerminalPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const terminalRef = useRef<Terminal | null>(null);
-  const fitAddonRef = useRef<FitAddon | null>(null);
   const { settings } = useSettingsStore();
-  const { updateStatus, getSession } = useSessionStore();
 
   const handleResize = useCallback(() => {
-    const fitAddon = fitAddonRef.current;
-    const terminal = terminalRef.current;
-    if (!fitAddon || !terminal) return;
+    const entry = getTerminal(sessionId);
+    if (!entry) return;
 
     try {
-      // Preserve scroll position across fit()
+      const { terminal, fitAddon } = entry;
       const viewport = terminal.element?.querySelector('.xterm-viewport');
       const scrollTop = viewport?.scrollTop ?? 0;
       const wasAtBottom = viewport
@@ -41,7 +41,6 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
       const oldRows = terminal.rows;
       fitAddon.fit();
 
-      // Only notify PTY if dimensions actually changed
       if (terminal.cols !== oldCols || terminal.rows !== oldRows) {
         invoke('pty_resize', {
           sessionId,
@@ -50,191 +49,117 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
         }).catch(console.error);
       }
 
-      // Restore scroll position (unless user was at bottom — then stay at bottom)
       if (viewport && !wasAtBottom) {
         viewport.scrollTop = scrollTop;
       }
     } catch {
-      // Ignore fit errors during unmount
+      // Ignore fit errors
     }
   }, [sessionId]);
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const terminal = new Terminal({
+    // Get or create the terminal instance
+    const entry = getTerminal(sessionId) ?? createTerminal(sessionId, {
       fontFamily: settings.font.family,
       fontSize: settings.font.size,
       lineHeight: settings.font.lineHeight,
       cursorBlink: settings.terminal.cursorBlink,
       cursorStyle: settings.terminal.cursorStyle,
       scrollback: settings.terminal.scrollback,
-      theme: {
-        background: '#0a0a0f',
-        foreground: '#e2e8f0',
-        cursor: '#7c3aed',
-        selectionBackground: 'rgba(124, 58, 237, 0.3)',
-        black: '#1e1e2e',
-        red: '#f38ba8',
-        green: '#a6e3a1',
-        yellow: '#f9e2af',
-        blue: '#89b4fa',
-        magenta: '#cba6f7',
-        cyan: '#94e2d5',
-        white: '#cdd6f4',
-        brightBlack: '#585b70',
-        brightRed: '#f38ba8',
-        brightGreen: '#a6e3a1',
-        brightYellow: '#f9e2af',
-        brightBlue: '#89b4fa',
-        brightMagenta: '#cba6f7',
-        brightCyan: '#94e2d5',
-        brightWhite: '#a6adc8',
-      },
-      allowProposedApi: true,
     });
 
-    // Let app shortcuts pass through instead of being consumed by xterm
-    terminal.attachCustomKeyEventHandler((e: KeyboardEvent) => {
-      // Don't intercept during IME composition (Korean, Japanese, Chinese input)
-      if (e.isComposing || e.keyCode === 229) return true;
+    const { terminal } = entry;
 
-      if (e.ctrlKey) {
-        const key = e.key.toLowerCase();
-        // App shortcuts that should NOT go to terminal
-        if (
-          key === 'n' ||  // New session
-          key === 'b' ||  // Toggle sidebar
-          key === 'p' ||  // Command palette
-          key === 'w' ||  // Close session
-          key === 'd' ||  // Split vertical / horizontal
-          key === 'i' ||  // IME input bar
-          key === ',' ||  // Settings
-          key === 'tab' || // Next session
-          (key >= '1' && key <= '9') // Switch session by number
-        ) {
-          return false;
+    // Attach (reparent) the terminal's DOM into this container
+    attachTerminal(sessionId, containerRef.current);
+
+    // Wire up PTY listeners only once per session (not per mount)
+    if (!isWired(sessionId)) {
+      markWired(sessionId);
+
+      // Send user input to PTY
+      terminal.onData((data) => {
+        invoke('pty_write', { sessionId, data }).catch(console.error);
+        eventBus.emit('session:input', { sessionId, data });
+        if (data.includes('\r') || data.includes('\n')) {
+          useMessageBusStore.getState().clearOutputBuffer(sessionId);
         }
-        // Ctrl+Shift combos: notification panel, keybinding guide
-        if (e.shiftKey && (key === 'n' || key === '?')) {
-          return false;
-        }
-      }
-      return true;
-    });
-
-    const fitAddon = new FitAddon();
-    const searchAddon = new SearchAddon();
-
-    terminal.loadAddon(fitAddon);
-    terminal.loadAddon(searchAddon);
-
-    terminal.open(containerRef.current);
-
-    // Try WebGL rendering, fallback to canvas
-    try {
-      const webglAddon = new WebglAddon();
-      webglAddon.onContextLoss(() => {
-        webglAddon.dispose();
       });
-      terminal.loadAddon(webglAddon);
-    } catch {
-      console.warn('WebGL addon not available, using canvas renderer');
+
+      // Listen for PTY output — throttle status updates
+      let lastStatusUpdate = 0;
+      let lastStatus: string | null = null;
+      const STATUS_THROTTLE_MS = 2000;
+
+      listen<string>(`pty-output-${sessionId}`, (event) => {
+        const decoded = base64Decode(event.payload);
+        terminal.write(decoded);
+
+        const text = new TextDecoder().decode(decoded);
+        const session = useSessionStore.getState().getSession(sessionId);
+        const status = detectStatus(text, session?.agentType || null);
+
+        if (status && status !== lastStatus) {
+          const now = Date.now();
+          if (now - lastStatusUpdate > STATUS_THROTTLE_MS) {
+            lastStatus = status;
+            lastStatusUpdate = now;
+            useSessionStore.getState().updateStatus(sessionId, status);
+          }
+        }
+
+        eventBus.emit('session:output', { sessionId, data: text });
+        useMessageBusStore.getState().recordOutput(sessionId, text);
+      });
+
+      // Subscribe: receive piped input from another session
+      eventBus.on('session:pipe-in', ({ toSessionId, content }) => {
+        if (toSessionId !== sessionId) return;
+        invoke('pty_write', { sessionId, data: content }).catch(console.error);
+      });
+
+      // Subscribe: receive broadcast
+      eventBus.on('session:broadcast', ({ content, fromSessionId }) => {
+        if (fromSessionId === sessionId) return;
+        invoke('pty_write', { sessionId, data: content }).catch(console.error);
+      });
+
+      // Listen for PTY exit
+      listen(`pty-exit-${sessionId}`, () => {
+        terminal.writeln('\r\n\x1b[90m[Process exited]\x1b[0m');
+        useSessionStore.getState().updateStatus(sessionId, 'idle');
+      });
+
+      // Spawn PTY process (only if not already running)
+      invoke('pty_has_session', { sessionId }).then((exists) => {
+        if (exists) return;
+        return invoke('pty_spawn', {
+          sessionId,
+          config: {
+            shell: settings.terminal.defaultShell || null,
+            cwd: useSessionStore.getState().getSession(sessionId)?.metadata?.workingDir
+              || settings.terminal.defaultCwd || null,
+            env: null,
+            cols: terminal.cols,
+            rows: terminal.rows,
+          },
+        });
+      }).catch((err) => {
+        terminal.writeln(`\x1b[31mFailed to start terminal: ${err}\x1b[0m`);
+        useSessionStore.getState().updateStatus(sessionId, 'error');
+      });
     }
 
-    fitAddon.fit();
-
-    // Delayed re-fit to ensure correct dimensions after layout settles
-    setTimeout(() => { try { fitAddon.fit(); } catch {} }, 300);
-    setTimeout(() => { try { fitAddon.fit(); } catch {} }, 1000);
-
-    terminalRef.current = terminal;
-    fitAddonRef.current = fitAddon;
-
-    // Send user input to PTY
-    terminal.onData((data) => {
-      invoke('pty_write', { sessionId, data }).catch(console.error);
-      eventBus.emit('session:input', { sessionId, data });
-      // Clear output buffer on Enter so "last output" only captures command result
-      if (data.includes('\r') || data.includes('\n')) {
-        useMessageBusStore.getState().clearOutputBuffer(sessionId);
-      }
-    });
-
-    // Listen for PTY output — throttle status updates to prevent re-render cascade
-    let lastStatusUpdate = 0;
-    let lastStatus: string | null = null;
-    const STATUS_THROTTLE_MS = 2000;
-
-    const unlistenOutput = listen<string>(`pty-output-${sessionId}`, (event) => {
-      const decoded = base64Decode(event.payload);
-      terminal.write(decoded);
-
-      const text = new TextDecoder().decode(decoded);
-      const session = getSession(sessionId);
-      const status = detectStatus(text, session?.agentType || null);
-
-      // Only update status if changed AND throttle period passed
-      if (status && status !== lastStatus) {
-        const now = Date.now();
-        if (now - lastStatusUpdate > STATUS_THROTTLE_MS) {
-          lastStatus = status;
-          lastStatusUpdate = now;
-          updateStatus(sessionId, status);
-        }
-      }
-
-      eventBus.emit('session:output', { sessionId, data: text });
-      useMessageBusStore.getState().recordOutput(sessionId, text);
-    });
-
-    // Subscribe: receive piped input from another session
-    const unsubPipe = eventBus.on('session:pipe-in', ({ toSessionId, content }) => {
-      if (toSessionId !== sessionId) return;
-      invoke('pty_write', { sessionId, data: content }).catch(console.error);
-    });
-
-    // Subscribe: receive broadcast
-    const unsubBroadcast = eventBus.on('session:broadcast', ({ content, fromSessionId }) => {
-      if (fromSessionId === sessionId) return; // skip self
-      invoke('pty_write', { sessionId, data: content }).catch(console.error);
-    });
-
-    // Listen for PTY exit
-    const unlistenExit = listen(`pty-exit-${sessionId}`, () => {
-      terminal.writeln('\r\n\x1b[90m[Process exited]\x1b[0m');
-      // Don't set to 'completed' — PTY exit can happen for many reasons
-      // Only AI agents finishing tasks should set 'completed'
-      updateStatus(sessionId, 'idle');
-    });
-
-    // Spawn PTY process (only if not already running)
-    invoke('pty_has_session', { sessionId }).then((exists) => {
-      if (exists) return; // PTY already running, just reconnect
-      return invoke('pty_spawn', {
-        sessionId,
-        config: {
-          shell: settings.terminal.defaultShell || null,
-          cwd: getSession(sessionId)?.metadata?.workingDir || settings.terminal.defaultCwd || null,
-          env: null,
-          cols: terminal.cols,
-          rows: terminal.rows,
-        },
-      });
-    }).catch((err) => {
-      terminal.writeln(`\x1b[31mFailed to start terminal: ${err}\x1b[0m`);
-      updateStatus(sessionId, 'error');
-    });
-
-    // Resize observer — debounced to prevent scroll jumps
+    // Resize observer — debounced
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     let lastWidth = 0;
     let lastHeight = 0;
     const resizeObserver = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) return;
-      const { width, height } = entry.contentRect;
-      // Only resize if dimensions actually changed (not just re-render)
+      const e = entries[0];
+      if (!e) return;
+      const { width, height } = e.contentRect;
       if (Math.abs(width - lastWidth) < 2 && Math.abs(height - lastHeight) < 2) return;
       lastWidth = width;
       lastHeight = height;
@@ -243,19 +168,17 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
     });
     resizeObserver.observe(containerRef.current);
 
-    // Cleanup — only dispose terminal UI, do NOT kill PTY
-    // PTY is killed when session is explicitly closed via closeSession()
+    // Delayed re-fit after layout settles (use handleResize to also notify PTY)
+    setTimeout(() => handleResize(), 100);
+    setTimeout(() => handleResize(), 500);
+    setTimeout(() => handleResize(), 1500);
+
+    // Cleanup — detach DOM but do NOT dispose terminal
     return () => {
       resizeObserver.disconnect();
-      unlistenOutput.then((fn) => fn());
-      unlistenExit.then((fn) => fn());
-      unsubPipe();
-      unsubBroadcast();
-      terminal.dispose();
-      terminalRef.current = null;
-      fitAddonRef.current = null;
+      detachTerminal(sessionId);
     };
-  }, [sessionId]); // Only re-create on session change
+  }, [sessionId]); // Only re-run on session change
 
   const [imeText, setImeText] = useState('');
   const [imeVisible, setImeVisible] = useState(false);
@@ -301,7 +224,8 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
               }
               if (e.key === 'Escape') {
                 setImeVisible(false);
-                terminalRef.current?.focus();
+                const entry = getTerminal(sessionId);
+                entry?.terminal.focus();
               }
             }}
             placeholder="한글 입력 (Enter 전송, Shift+Enter 개행, Esc 닫기)"

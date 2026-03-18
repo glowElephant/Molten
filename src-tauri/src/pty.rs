@@ -229,6 +229,11 @@ impl PtyManager {
         let instances = self.instances.lock().unwrap();
         instances.len()
     }
+
+    pub fn session_ids(&self) -> Vec<String> {
+        let instances = self.instances.lock().unwrap();
+        instances.keys().cloned().collect()
+    }
 }
 
 fn default_shell() -> String {

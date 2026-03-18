@@ -44,6 +44,12 @@ interface LayoutStore {
   /** Collect all session IDs across all groups */
   getAllSplitSessionIds: () => Set<string>;
 
+  /** Swap two sessions' positions within the layout tree */
+  swapSessions: (sessionIdA: string, sessionIdB: string) => void;
+
+  /** Dock a session relative to a target (top/bottom/left/right) */
+  dockSession: (sourceId: string, targetId: string, position: 'top' | 'bottom' | 'left' | 'right') => void;
+
   /** Restore groups from saved snapshot */
   restoreGroups: (groups: LayoutGroup[]) => void;
 
@@ -204,6 +210,40 @@ export const useLayoutStore = create<LayoutStore>((set, get) => ({
     return ids;
   },
 
+  swapSessions: (sessionIdA: string, sessionIdB: string) => {
+    if (sessionIdA === sessionIdB) return;
+    set((state) => ({
+      groups: state.groups.map((g) => ({
+        ...g,
+        layout: swapInLayout(g.layout, sessionIdA, sessionIdB),
+      })),
+    }));
+  },
+
+  dockSession: (sourceId: string, targetId: string, position: 'top' | 'bottom' | 'left' | 'right') => {
+    if (sourceId === targetId) return;
+    set((state) => {
+      // 1. Remove source from the layout tree
+      let newGroups = state.groups.map((g) => {
+        const cleaned = removeNode(g.layout, sourceId);
+        if (!cleaned) return null; // group became empty
+        if (cleaned.type === 'terminal') return null; // only one left → dissolve
+        return { ...g, layout: cleaned };
+      }).filter((g): g is LayoutGroup => g !== null);
+
+      // 2. Insert source relative to target
+      const direction: SplitDirection = (position === 'left' || position === 'right') ? 'horizontal' : 'vertical';
+      const sourceFirst = position === 'left' || position === 'top';
+
+      newGroups = newGroups.map((g) => {
+        if (!collectSessionIds(g.layout).includes(targetId)) return g;
+        return { ...g, layout: dockInLayout(g.layout, targetId, sourceId, direction, sourceFirst) };
+      });
+
+      return { groups: newGroups };
+    });
+  },
+
   restoreGroups: (groups: LayoutGroup[]) => {
     set({ groups });
     groupCounter = Math.max(groupCounter, groups.length);
@@ -304,6 +344,50 @@ function removeNode(node: LayoutNode, sessionId: string): LayoutNode | null {
     return { ...node, children: remaining };
   }
 
+  return node;
+}
+
+/** Dock sourceId next to targetId by wrapping target in a new split */
+function dockInLayout(
+  node: LayoutNode,
+  targetId: string,
+  sourceId: string,
+  direction: SplitDirection,
+  sourceFirst: boolean,
+): LayoutNode {
+  if (node.type === 'terminal' && node.sessionId === targetId) {
+    const sourceNode: LayoutNode = { type: 'terminal', sessionId: sourceId };
+    const targetNode: LayoutNode = { type: 'terminal', sessionId: targetId };
+    return {
+      type: 'split',
+      direction,
+      children: sourceFirst ? [sourceNode, targetNode] : [targetNode, sourceNode],
+    };
+  }
+  if (node.type === 'split' && node.children) {
+    return {
+      ...node,
+      children: node.children.map((child) =>
+        dockInLayout(child, targetId, sourceId, direction, sourceFirst)
+      ),
+    };
+  }
+  return node;
+}
+
+/** Swap two session IDs in a layout tree */
+function swapInLayout(node: LayoutNode, idA: string, idB: string): LayoutNode {
+  if (node.type === 'terminal') {
+    if (node.sessionId === idA) return { ...node, sessionId: idB };
+    if (node.sessionId === idB) return { ...node, sessionId: idA };
+    return node;
+  }
+  if (node.type === 'split' && node.children) {
+    return {
+      ...node,
+      children: node.children.map((child) => swapInLayout(child, idA, idB)),
+    };
+  }
   return node;
 }
 

@@ -28,6 +28,11 @@ pub fn start_api_server(app_handle: tauri::AppHandle, queue: Arc<CommandQueue>) 
             }
         };
 
+        // Clear stale tmux shim state from previous runs
+        let tmux_state = std::env::temp_dir().join("molten-tmux");
+        let _ = std::fs::remove_dir_all(&tmux_state);
+        eprintln!("[api] Cleared tmux shim state at {:?}", tmux_state);
+
         eprintln!("Molten API server listening on http://127.0.0.1:9900");
 
         for stream in listener.incoming() {
@@ -176,12 +181,36 @@ fn route(handle: &tauri::AppHandle, queue: &Arc<CommandQueue>, path: &str) -> (&
 
         // /api/session/count — return number of sessions
         "/api/session/count" => {
-            eval_js(handle, "document.title = String(window.__moltenSessionCount?.() ?? 0)");
-            // Quick hack: count from the eval isn't easily retrievable
-            // Instead, use the PtyState to count
             let pty_state = handle.state::<crate::commands::PtyState>();
             let count = pty_state.0.session_count();
             ("200 OK", format!(r#"{{"count":{}}}"#, count))
+        }
+
+        // /api/sessions — return list of PTY session IDs
+        "/api/sessions" => {
+            let pty_state = handle.state::<crate::commands::PtyState>();
+            let ids = pty_state.0.session_ids();
+            let json = serde_json::to_string(&ids).unwrap_or("[]".to_string());
+            ("200 OK", json)
+        }
+
+        // /api/pty/write/<session_id> — write text directly to a PTY session
+        // Text is URL-encoded after the session ID, separated by /
+        // Format: /api/pty/write/SESSION_ID/ENCODED_TEXT
+        _ if path.starts_with("/api/pty/write/") => {
+            let rest = path.trim_start_matches("/api/pty/write/");
+            // Find the first / to split session_id and text
+            if let Some(slash_pos) = rest.find('/') {
+                let session_id = &rest[..slash_pos];
+                let text = urldecode(&rest[slash_pos + 1..]);
+                let pty_state = handle.state::<crate::commands::PtyState>();
+                match pty_state.0.write(session_id, (text + "\n").as_bytes()) {
+                    Ok(_) => ("200 OK", r#"{"success":true}"#.to_string()),
+                    Err(e) => ("500 Internal Server Error", format!(r#"{{"error":"{}"}}"#, e)),
+                }
+            } else {
+                ("400 Bad Request", r#"{"error":"Missing text. Use /api/pty/write/SESSION_ID/TEXT"}"#.to_string())
+            }
         }
 
         _ => ("404 Not Found", format!(r#"{{"error":"Unknown: {}"}}"#, path)),

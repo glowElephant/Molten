@@ -1,28 +1,36 @@
 #!/bin/bash
 # Molten tmux shim — intercepts tmux commands from Claude Code
 # and translates them to Molten API calls.
+# Uses actual PTY session IDs for reliable targeting.
 
 MOLTEN_API="http://127.0.0.1:9900"
 STATE_DIR="${TMPDIR:-/tmp}/molten-tmux"
-PANE_MAP="$STATE_DIR/pane_map"       # pane_id=session_index
+PANE_MAP="$STATE_DIR/pane_map"       # pane_id=pty_session_id
 COUNTER_FILE="$STATE_DIR/pane_counter"
 ACTIVE_FILE="$STATE_DIR/active_pane"
+LOG_FILE="$STATE_DIR/shim.log"
 
 mkdir -p "$STATE_DIR"
-
-BASE_COUNT_FILE="$STATE_DIR/base_count"
 
 [ -f "$COUNTER_FILE" ] || echo "0" > "$COUNTER_FILE"
 [ -f "$ACTIVE_FILE" ] || echo "%0" > "$ACTIVE_FILE"
 
-# On first run, query the current session count as baseline
-if [ ! -f "$BASE_COUNT_FILE" ]; then
-  BC=$(curl -s "${MOLTEN_API}/api/session/count" 2>/dev/null | grep -o '"count":[0-9]*' | grep -o '[0-9]*' || echo "1")
-  echo "$BC" > "$BASE_COUNT_FILE"
-  echo "%0=${BC}" > "$PANE_MAP"
-else
-  [ -f "$PANE_MAP" ] || echo "%0=1" > "$PANE_MAP"
+# On first run, map %0 to the current session
+if [ ! -f "$PANE_MAP" ]; then
+  # Get the list of current PTY session IDs
+  SESSIONS=$(curl -s "${MOLTEN_API}/api/sessions" 2>/dev/null)
+  # Extract first session ID (the one running Claude Code)
+  FIRST_ID=$(echo "$SESSIONS" | grep -o '"[^"]*"' | head -1 | tr -d '"')
+  if [ -n "$FIRST_ID" ]; then
+    echo "%0=$FIRST_ID" > "$PANE_MAP"
+  else
+    echo "%0=unknown" > "$PANE_MAP"
+  fi
 fi
+
+log() {
+  echo "[$(date +%H:%M:%S)] $*" >> "$LOG_FILE"
+}
 
 # ── Helpers ──
 
@@ -37,26 +45,36 @@ get_active_pane() {
   cat "$ACTIVE_FILE" 2>/dev/null || echo "%0"
 }
 
-# Get absolute session index for a pane ID
-pane_to_index() {
+# Get actual PTY session ID for a pane
+pane_to_session_id() {
   local pane="$1"
-  local idx
-  idx=$(grep "^${pane}=" "$PANE_MAP" 2>/dev/null | head -1 | cut -d= -f2)
-  echo "${idx:-1}"
+  local sid
+  sid=$(grep "^${pane}=" "$PANE_MAP" 2>/dev/null | head -1 | cut -d= -f2)
+  echo "$sid"
 }
 
-# Register pane with its absolute session index
+# Register pane with its actual PTY session ID
 register_pane() {
   local pane_id="$1"
-  local session_idx="$2"
-  echo "${pane_id}=${session_idx}" >> "$PANE_MAP"
+  local session_id="$2"
+  echo "${pane_id}=${session_id}" >> "$PANE_MAP"
+  log "Registered pane $pane_id -> session $session_id"
 }
 
-# Get next session index: base_count + shim_created_count + 1
-next_session_index() {
-  local base=$(cat "$BASE_COUNT_FILE" 2>/dev/null || echo 1)
-  local created=$(cat "$COUNTER_FILE" 2>/dev/null || echo 0)
-  echo $((base + created + 1))
+# Get the newest session ID (the one just created)
+get_newest_session() {
+  local before="$1"
+  local after
+  after=$(curl -s "${MOLTEN_API}/api/sessions" 2>/dev/null)
+  # Find IDs in after that weren't in before
+  for id in $(echo "$after" | grep -o '"[^"]*"' | tr -d '"'); do
+    if ! echo "$before" | grep -q "$id"; then
+      echo "$id"
+      return
+    fi
+  done
+  # Fallback: return last ID
+  echo "$after" | grep -o '"[^"]*"' | tail -1 | tr -d '"'
 }
 
 urlencode() {
@@ -89,6 +107,8 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+log "CMD=$CMD ARGS=${ARGS[*]}"
+
 get_opt() {
   local flag="$1" i
   for ((i = 0; i < ${#ARGS[@]}; i++)); do
@@ -111,21 +131,23 @@ case "$CMD" in
   has-session) exit 0 ;;
 
   new-session)
-    NEW_IDX=$(next_session_index)
+    BEFORE=$(curl -s "${MOLTEN_API}/api/sessions" 2>/dev/null)
     api "session/create" > /dev/null
-    sleep 0.5
+    sleep 0.8
+    NEW_SID=$(get_newest_session "$BEFORE")
     PANE_ID=$(next_pane_id)
-    register_pane "$PANE_ID" "$NEW_IDX"
+    register_pane "$PANE_ID" "$NEW_SID"
     echo "$PANE_ID" > "$ACTIVE_FILE"
     has_flag "-P" && echo "$PANE_ID"
     ;;
 
   new-window)
-    NEW_IDX=$(next_session_index)
+    BEFORE=$(curl -s "${MOLTEN_API}/api/sessions" 2>/dev/null)
     api "session/create" > /dev/null
-    sleep 0.5
+    sleep 0.8
+    NEW_SID=$(get_newest_session "$BEFORE")
     PANE_ID=$(next_pane_id)
-    register_pane "$PANE_ID" "$NEW_IDX"
+    register_pane "$PANE_ID" "$NEW_SID"
     has_flag "-P" && echo "$PANE_ID"
     ;;
 
@@ -134,11 +156,12 @@ case "$CMD" in
     has_flag "-v" && DIR="vertical"
     has_flag "-h" && DIR="horizontal"
 
-    NEW_IDX=$(next_session_index)
+    BEFORE=$(curl -s "${MOLTEN_API}/api/sessions" 2>/dev/null)
     api "split/$DIR" > /dev/null
-    sleep 0.5
+    sleep 0.8
+    NEW_SID=$(get_newest_session "$BEFORE")
     PANE_ID=$(next_pane_id)
-    register_pane "$PANE_ID" "$NEW_IDX"
+    register_pane "$PANE_ID" "$NEW_SID"
     has_flag "-P" && echo "$PANE_ID"
     ;;
 
@@ -158,18 +181,24 @@ case "$CMD" in
     done
 
     if [ -n "$TEXT" ]; then
-      # Switch to correct session
+      # Determine target session ID
+      SID=""
       if [ -n "$TARGET" ]; then
         TPANE=$(echo "$TARGET" | grep -o '%[0-9]*' || echo "$TARGET")
-        if [ -n "$TPANE" ]; then
-          IDX=$(pane_to_index "$TPANE")
-          api "session/switch/$IDX" > /dev/null
-          sleep 0.15
-        fi
+        SID=$(pane_to_session_id "$TPANE")
       fi
 
-      ENCODED=$(urlencode "$TEXT")
-      api "session/type/$ENCODED" > /dev/null
+      if [ -n "$SID" ] && [ "$SID" != "unknown" ]; then
+        # Write directly to PTY — no switching needed
+        ENCODED=$(urlencode "$TEXT")
+        log "send-keys to pane=$TPANE sid=$SID text=$TEXT"
+        api "pty/write/$SID/$ENCODED" > /dev/null
+      else
+        # Fallback: type into active session via eval_js
+        ENCODED=$(urlencode "$TEXT")
+        log "send-keys fallback text=$TEXT"
+        api "session/type/$ENCODED" > /dev/null
+      fi
     fi
     ;;
 
@@ -179,8 +208,19 @@ case "$CMD" in
       TPANE=$(echo "$TARGET" | grep -o '%[0-9]*' || echo "$TARGET")
       if [ -n "$TPANE" ]; then
         echo "$TPANE" > "$ACTIVE_FILE"
-        IDX=$(pane_to_index "$TPANE")
-        api "session/switch/$IDX" > /dev/null
+        SID=$(pane_to_session_id "$TPANE")
+        if [ -n "$SID" ] && [ "$SID" != "unknown" ]; then
+          # Find session index for UI switching
+          SESSIONS=$(curl -s "${MOLTEN_API}/api/sessions" 2>/dev/null)
+          IDX=1
+          for id in $(echo "$SESSIONS" | grep -o '"[^"]*"' | tr -d '"'); do
+            if [ "$id" = "$SID" ]; then
+              api "session/switch/$IDX" > /dev/null
+              break
+            fi
+            IDX=$((IDX + 1))
+          done
+        fi
       fi
     fi
     ;;
@@ -209,10 +249,21 @@ case "$CMD" in
     TARGET=$(get_opt "-t")
     if [ -n "$TARGET" ]; then
       TPANE=$(echo "$TARGET" | grep -o '%[0-9]*' || echo "$TARGET")
-      IDX=$(pane_to_index "$TPANE")
-      api "session/switch/$IDX" > /dev/null
-      sleep 0.1
-      api "session/close" > /dev/null
+      SID=$(pane_to_session_id "$TPANE")
+      if [ -n "$SID" ]; then
+        # Switch to session and close it
+        SESSIONS=$(curl -s "${MOLTEN_API}/api/sessions" 2>/dev/null)
+        IDX=1
+        for id in $(echo "$SESSIONS" | grep -o '"[^"]*"' | tr -d '"'); do
+          if [ "$id" = "$SID" ]; then
+            api "session/switch/$IDX" > /dev/null
+            sleep 0.1
+            api "session/close" > /dev/null
+            break
+          fi
+          IDX=$((IDX + 1))
+        done
+      fi
       grep -v "^${TPANE}=" "$PANE_MAP" > "$PANE_MAP.tmp" 2>/dev/null
       mv "$PANE_MAP.tmp" "$PANE_MAP" 2>/dev/null
     fi

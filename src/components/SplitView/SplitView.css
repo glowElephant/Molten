@@ -116,3 +116,54 @@
   color: #ef4444;
   background: rgba(239, 68, 68, 0.1);
 }
+
+/* Drag reorder indicators */
+.split-leaf__header {
+  cursor: grab;
+}
+
+.split-leaf__header:active {
+  cursor: grabbing;
+}
+
+/* Dock overlay */
+.split-dock-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.split-dock-highlight {
+  position: absolute;
+  background: rgba(124, 58, 237, 0.15);
+  border: 2px solid rgba(124, 58, 237, 0.6);
+  border-radius: 4px;
+  transition: all 0.1s ease;
+}
+
+.split-dock-highlight--top {
+  top: 0; left: 0; right: 0;
+  height: 50%;
+}
+
+.split-dock-highlight--bottom {
+  bottom: 0; left: 0; right: 0;
+  height: 50%;
+}
+
+.split-dock-highlight--left {
+  top: 0; left: 0; bottom: 0;
+  width: 50%;
+}
+
+.split-dock-highlight--right {
+  top: 0; right: 0; bottom: 0;
+  width: 50%;
+}
+
+.split-dock-highlight--center {
+  inset: 10%;
+  background: rgba(124, 58, 237, 0.1);
+  border: 2px dashed rgba(124, 58, 237, 0.5);
+}

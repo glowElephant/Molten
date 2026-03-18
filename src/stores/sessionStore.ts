@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import type { Session, SessionConfig, SessionStatus, SessionMetadata } from '../types';
+import { destroyTerminal } from '../utils/terminalManager';
 
 interface SessionStore {
   sessions: Map<string, Session>;
@@ -64,8 +65,9 @@ export const useSessionStore = create<SessionStore>((set, get) => ({
   },
 
   closeSession: (id: string) => {
-    // Kill the PTY process
+    // Kill the PTY process and destroy terminal UI
     invoke('pty_kill', { sessionId: id }).catch(() => {});
+    destroyTerminal(id);
 
     set((state) => {
       const newSessions = new Map(state.sessions);
