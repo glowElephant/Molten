@@ -3,7 +3,7 @@ import { TitleBar } from './components/TitleBar';
 import { Sidebar } from './components/Sidebar';
 import { StatusBar } from './components/StatusBar';
 import { TerminalPanel } from './components/Terminal';
-import { SplitView } from './components/SplitView';
+import { SplitView, collectSessionIds } from './components/SplitView';
 import { NotificationPanel } from './components/Notification';
 import { SettingsModal } from './components/Settings';
 import { CommandPalette } from './components/CommandPalette';
@@ -135,12 +135,21 @@ function App() {
   const sessionList = Array.from(sessions.values());
   const hasAnySessions = sessionList.length > 0;
 
-  // Auto-clear layout when no sessions remain
-  const isSplitMode = layout !== null && layout.type === 'split' && hasAnySessions;
+  // Auto-clear layout when no sessions in layout remain
   if (layout && !hasAnySessions) {
-    // Defer to avoid state update during render
     setTimeout(() => useLayoutStore.getState().setLayout(null), 0);
   }
+
+  // Determine which sessions are in the split layout
+  const splitSessionIds = new Set(
+    layout ? collectSessionIds(layout) : []
+  );
+
+  // Is the active session part of the split layout?
+  const activeInSplit = activeSessionId ? splitSessionIds.has(activeSessionId) : false;
+
+  // Sessions NOT in the split layout (standalone)
+  const standaloneSessions = sessionList.filter((s) => !splitSessionIds.has(s.id));
 
   return (
     <div className="app" data-theme={settings.theme}>
@@ -151,26 +160,31 @@ function App() {
         {sidebar.position === 'left' && <Sidebar />}
 
         <main className="app__content">
-          {isSplitMode ? (
-            // Split mode: render split view
-            <SplitView node={layout} />
-          ) : hasAnySessions ? (
-            // Single mode: show active session with optional header
-            sessionList.map((session) => (
-              <div
-                key={session.id}
-                className="app__terminal-wrapper"
-                style={{
-                  display: session.id === activeSessionId ? 'flex' : 'none',
-                  flexDirection: 'column',
-                  flex: 1,
-                  minHeight: 0,
-                }}
-              >
-                <TerminalPanel sessionId={session.id} />
-              </div>
-            ))
-          ) : (
+          {/* Layer: Split view (visible when active session is in split) */}
+          {layout && layout.type === 'split' && (
+            <div style={{ display: activeInSplit ? 'flex' : 'none', flex: 1, minHeight: 0 }}>
+              <SplitView node={layout} />
+            </div>
+          )}
+
+          {/* Layer: Standalone sessions (visible when active session is NOT in split) */}
+          {standaloneSessions.map((session) => (
+            <div
+              key={session.id}
+              className="app__terminal-wrapper"
+              style={{
+                display: !activeInSplit && session.id === activeSessionId ? 'flex' : 'none',
+                flexDirection: 'column',
+                flex: 1,
+                minHeight: 0,
+              }}
+            >
+              <TerminalPanel sessionId={session.id} />
+            </div>
+          ))}
+
+          {/* Placeholder when no sessions */}
+          {!hasAnySessions && (
             <div className="app__placeholder">
               <div className="app__placeholder-logo">◆</div>
               <h1 className="app__placeholder-title">Molten</h1>
