@@ -163,9 +163,15 @@ fn route(handle: &tauri::AppHandle, queue: &Arc<CommandQueue>, path: &str) -> (&
         _ if path.starts_with("/api/session/type/") => {
             let text = path.trim_start_matches("/api/session/type/");
             let decoded = urldecode(text);
-            let js = format!("window.__moltenExec('session.type.{}')", decoded.replace('\'', "\\'"));
+            // Escape for JS string: \ → \\, ' → \', newline → \n
+            let escaped = decoded
+                .replace('\\', "\\\\")
+                .replace('\'', "\\'")
+                .replace('\n', "\\n")
+                .replace('\r', "\\r");
+            let js = format!("window.__moltenExec('session.type.{}')", escaped);
             eval_js(handle, &js);
-            ("200 OK", format!(r#"{{"success":true,"action":"session.type","text":"{}"}}"#, decoded))
+            ("200 OK", format!(r#"{{"success":true,"action":"session.type","text":"ok"}}"#))
         }
 
         _ => ("404 Not Found", format!(r#"{{"error":"Unknown: {}"}}"#, path)),
