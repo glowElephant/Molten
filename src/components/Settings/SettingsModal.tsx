@@ -376,12 +376,12 @@ function TriggersTab() {
                   type="text"
                   value={trigger.name}
                   onChange={(e) => updateTrigger(trigger.id, { name: e.target.value })}
-                  style={{ flex: 1, fontSize: 13 }}
+                  style={{ flex: 1, fontSize: 13, color: 'var(--color-text-primary)', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '4px 8px' }}
                   placeholder="Trigger name"
                 />
               ) : (
                 <span
-                  style={{ flex: 1, fontSize: 13, cursor: 'pointer' }}
+                  style={{ flex: 1, fontSize: 13, cursor: 'pointer', color: 'var(--color-text-primary)' }}
                   onClick={() => setEditingId(trigger.id)}
                 >
                   {trigger.name}
