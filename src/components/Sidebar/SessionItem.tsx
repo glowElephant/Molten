@@ -6,11 +6,12 @@ import type { Session } from '../../types';
 
 interface SessionItemProps {
   session: Session;
+  index: number;
   isActive: boolean;
   onClick: () => void;
 }
 
-export function SessionItem({ session, isActive, onClick }: SessionItemProps) {
+export function SessionItem({ session, index, isActive, onClick }: SessionItemProps) {
   const { closeSession, renameSession } = useSessionStore();
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(session.name);
@@ -59,7 +60,7 @@ export function SessionItem({ session, isActive, onClick }: SessionItemProps) {
         session.status === 'waiting' ? 'session-item--glow' : ''
       }`}
       onClick={onClick}
-      title={`${session.name} — ${statusLabel}`}
+      title={`${session.name} — ${statusLabel} (Ctrl+${index})`}
     >
       <div className="session-item__status">
         <span
@@ -69,6 +70,9 @@ export function SessionItem({ session, isActive, onClick }: SessionItemProps) {
           style={{ backgroundColor: statusColor }}
         />
       </div>
+      {index <= 9 && (
+        <span className="session-item__index">{index}</span>
+      )}
 
       <div className="session-item__info">
         {isEditing ? (

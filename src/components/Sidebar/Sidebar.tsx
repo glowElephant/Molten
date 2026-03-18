@@ -66,10 +66,11 @@ export function Sidebar() {
             </button>
           </div>
         ) : (
-          sessionList.map((session) => (
+          sessionList.map((session, index) => (
             <SessionItem
               key={session.id}
               session={session}
+              index={index + 1}
               isActive={session.id === activeSessionId}
               onClick={() => setActiveSession(session.id)}
             />
