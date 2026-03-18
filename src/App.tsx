@@ -13,11 +13,13 @@ import { useSessionStore } from './stores/sessionStore';
 import { useNotificationStore } from './stores/notificationStore';
 import { useLayoutStore } from './stores/layoutStore';
 import { useSessionNotifications } from './hooks/useSessionNotifications';
+import { useSettingsPersistence } from './hooks/useSettingsPersistence';
 import './utils/selfCapture';
 import './App.css';
 
 function App() {
   useSessionNotifications();
+  useSettingsPersistence();
 
   const { settings } = useSettingsStore();
   const { sidebar, titleBar } = settings;

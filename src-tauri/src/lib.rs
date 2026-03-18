@@ -2,6 +2,7 @@
 mod api_server;
 mod capture;
 mod commands;
+mod config;
 mod pty;
 
 use commands::PtyState;
@@ -31,6 +32,8 @@ pub fn run() {
                 commands::pty_session_count,
                 commands::poll_commands,
                 capture::capture_window,
+                config::load_config,
+                config::save_config,
             ])
             .setup(move |app| {
                 let handle = app.handle().clone();
@@ -50,6 +53,8 @@ pub fn run() {
                 commands::pty_has_session,
                 commands::pty_session_count,
                 capture::capture_window,
+                config::load_config,
+                config::save_config,
             ]);
     }
 
