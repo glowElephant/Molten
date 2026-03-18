@@ -2,6 +2,47 @@
 
 > The liquid terminal for AI coding agents — dock, split, merge, and reshape everything.
 
+## Implementation Status (2026-03-18)
+
+### Completed (Phase 1 MVP)
+- [x] Terminal rendering (xterm.js + ConPTY/PTY)
+- [x] Multi-session management (create/switch/close/rename)
+- [x] Split view (horizontal/vertical, N-way equal split)
+- [x] Split pane headers (session name + close button)
+- [x] Sidebar (session list, index numbers, toggle, left/right position)
+- [x] Custom title bar (minimize/maximize/close, icon toggle)
+- [x] Status bar (model/tokens/cost/notification badge)
+- [x] Notification panel (auto-notifications on status change)
+- [x] Settings UI (4 tabs: General, Terminal, Notifications, Appearance)
+- [x] Settings persistence (JSON file, survives restart)
+- [x] Command palette (Ctrl+P, search all actions)
+- [x] Keybinding guide (Ctrl+Shift+?)
+- [x] Workspace presets (Focus, Dual, Triple, Stack)
+- [x] Dark Glassmorphism theme
+- [x] 69 tests (58 TypeScript + 11 Rust)
+- [x] Dev API server + window self-capture (automated testing)
+
+### Phase 1.5 (Next)
+- [ ] Session grouping system
+- [ ] Sidebar drag reorder
+- [ ] Docking system (drag panels to dock/undock)
+- [ ] Auto-start claude on session creation (option)
+
+### Phase 2 (Polish)
+- [ ] Gooey merge/tear animations
+- [ ] Block-based output
+- [ ] Inter-session communication
+- [ ] Triggers (regex-based automation)
+- [ ] Session persistence (survive restart)
+- [ ] Quick terminal (Quake mode)
+
+### Phase 3 (Ecosystem)
+- [ ] Plugin system + API
+- [ ] Theme engine
+- [ ] Plugin marketplace
+
+---
+
 ## 1. Vision
 
 Molten is a **desktop terminal wrapper** purpose-built for running and managing multiple AI coding agent sessions (Claude Code, Codex, Gemini CLI, Aider, OpenCode, etc.).
