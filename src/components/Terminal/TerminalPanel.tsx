@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { SearchAddon } from '@xterm/addon-search';
@@ -108,6 +108,7 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
           key === 'p' ||  // Command palette
           key === 'w' ||  // Close session
           key === 'd' ||  // Split vertical / horizontal
+          key === 'i' ||  // IME input bar
           key === ',' ||  // Settings
           key === 'tab' || // Next session
           (key >= '1' && key <= '9') // Switch session by number
@@ -242,9 +243,60 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
     };
   }, [sessionId]); // Only re-create on session change
 
+  const [imeText, setImeText] = useState('');
+  const [imeVisible, setImeVisible] = useState(false);
+  const imeInputRef = useRef<HTMLInputElement>(null);
+
+  // Ctrl+I toggles IME input bar
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === 'i' && !e.repeat) {
+        e.preventDefault();
+        setImeVisible((v) => {
+          if (!v) setTimeout(() => imeInputRef.current?.focus(), 50);
+          return !v;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKey, true);
+    return () => window.removeEventListener('keydown', handleKey, true);
+  }, []);
+
+  const handleImeSend = () => {
+    if (!imeText) return;
+    invoke('pty_write', { sessionId, data: imeText }).catch(console.error);
+    setImeText('');
+    imeInputRef.current?.focus();
+  };
+
   return (
     <div className="terminal-panel">
       <div className="terminal-panel__container" ref={containerRef} />
+      {imeVisible && (
+        <div className="terminal-panel__ime-bar">
+          <input
+            ref={imeInputRef}
+            className="terminal-panel__ime-input"
+            value={imeText}
+            onChange={(e) => setImeText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.isComposing) {
+                e.preventDefault();
+                handleImeSend();
+              }
+              if (e.key === 'Escape') {
+                setImeVisible(false);
+                // Return focus to terminal
+                terminalRef.current?.focus();
+              }
+            }}
+            placeholder="한글 입력 (Enter로 전송, Esc로 닫기)"
+          />
+          <button className="terminal-panel__ime-send" onClick={handleImeSend}>
+            전송
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -40,3 +40,52 @@
 .terminal-panel__container .xterm-viewport::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* IME Input Bar */
+.terminal-panel__ime-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  background: var(--color-bg-panel-solid, #1a1a2e);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.terminal-panel__ime-input {
+  flex: 1;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: var(--color-text-primary, #e2e8f0);
+  font-size: 13px;
+  font-family: var(--font-mono);
+  outline: none;
+}
+
+.terminal-panel__ime-input:focus {
+  border-color: var(--color-accent, #7c3aed);
+}
+
+.terminal-panel__ime-input::placeholder {
+  color: var(--color-text-muted, #475569);
+  font-size: 11px;
+}
+
+.terminal-panel__ime-send {
+  padding: 5px 12px;
+  background: rgba(124, 58, 237, 0.2);
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  border-radius: 4px;
+  color: var(--color-accent, #7c3aed);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.terminal-panel__ime-send:hover {
+  background: rgba(124, 58, 237, 0.3);
+}
