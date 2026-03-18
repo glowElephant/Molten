@@ -1,3 +1,4 @@
+import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, X, CheckCheck, Trash2 } from 'lucide-react';
 import { useNotificationStore } from '../../stores/notificationStore';
 import './NotificationPanel.css';
@@ -17,7 +18,12 @@ export function NotificationPanel() {
   if (!panelVisible) return null;
 
   return (
-    <div className="notification-panel">
+    <motion.div
+      className="notification-panel"
+      initial={{ opacity: 0, x: 30 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+    >
       <div className="notification-panel__header">
         <div className="notification-panel__title">
           <Bell size={14} />
@@ -61,13 +67,18 @@ export function NotificationPanel() {
             No notifications
           </div>
         ) : (
-          notifications.map((notification) => (
-            <div
+          <AnimatePresence>
+          {notifications.map((notification) => (
+            <motion.div
               key={notification.id}
               className={`notification-item ${
                 !notification.read ? 'notification-item--unread' : ''
               }`}
               onClick={() => markRead(notification.id)}
+              initial={{ opacity: 0, x: 40, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, x: 40, scale: 0.9 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
             >
               <div className="notification-item__content">
                 <span className="notification-item__title">
@@ -89,11 +100,12 @@ export function NotificationPanel() {
               >
                 <X size={12} />
               </button>
-            </div>
-          ))
+            </motion.div>
+          ))}
+          </AnimatePresence>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 

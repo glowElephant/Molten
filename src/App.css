@@ -161,79 +161,24 @@ body {
 
 /* ========== Liquid Animations (F2.1) ========== */
 
-/* Sidebar slide transition */
-[data-animations="on"] .sidebar {
-  transition: width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-              opacity 0.2s ease;
-}
-
-/* Sidebar toggle button spring */
-[data-animations="on"] .sidebar-toggle {
-  transition: width 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
-              background 0.2s ease,
-              color 0.2s ease;
-}
-
-/* Panel open/close spring */
-[data-animations="on"] .settings-overlay,
-[data-animations="on"] .command-palette-overlay {
-  animation: fadeIn 0.15s ease-out;
-}
-
-[data-animations="on"] .settings-modal,
-[data-animations="on"] .command-palette {
-  animation: springIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes springIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-/* Split pane resize spring */
-[data-animations="on"] .split-pane {
-  transition: flex 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* Session item hover ripple */
+/* Session item click feedback */
 [data-animations="on"] .session-item {
   transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 [data-animations="on"] .session-item:active {
-  transform: scale(0.98);
+  transform: scale(0.97);
+}
+
+/* Sidebar toggle spring */
+[data-animations="on"] .sidebar-toggle {
+  transition: width 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+              background 0.2s ease;
 }
 
 /* Group collapse/expand */
 [data-animations="on"] .sidebar__group {
   transition: all 0.2s ease;
-}
-
-/* Notification slide in */
-[data-animations="on"] .notification-item {
-  animation: slideInRight 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
 }
 
 /* Split leaf active glow pulse */

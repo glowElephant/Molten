@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useSessionStore } from '../../stores/sessionStore';
 import { useLayoutStore } from '../../stores/layoutStore';
 import { getStatusColor, getStatusLabel } from '../../utils/statusDetector';
+import { useRipple } from '../RippleEffect';
 import type { Session } from '../../types';
 
 interface SessionItemProps {
@@ -55,13 +56,14 @@ export function SessionItem({ session, index, isActive, onClick }: SessionItemPr
 
   const statusColor = getStatusColor(session.status);
   const statusLabel = getStatusLabel(session.status);
+  const { triggerRipple, rippleElements } = useRipple();
 
   return (
     <div
       className={`session-item ${isActive ? 'session-item--active' : ''} ${
         session.status === 'waiting' ? 'session-item--glow' : ''
       }`}
-      onClick={onClick}
+      onClick={(e) => { triggerRipple(e); onClick(); }}
       title={`${session.name} — ${statusLabel} (Ctrl+${index})`}
     >
       <div className="session-item__status">
@@ -112,6 +114,7 @@ export function SessionItem({ session, index, isActive, onClick }: SessionItemPr
       >
         <X size={12} />
       </button>
+      {rippleElements}
     </div>
   );
 }

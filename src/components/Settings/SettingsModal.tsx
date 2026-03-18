@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { X, Settings, Plus, Trash2 } from 'lucide-react';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useTriggerStore, generateTriggerId } from '../../stores/triggerStore';
@@ -27,8 +28,20 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   ];
 
   return (
-    <div className="settings-overlay" onClick={onClose}>
-      <div className="settings-modal" onClick={(e) => e.stopPropagation()}>
+    <motion.div
+      className="settings-overlay"
+      onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15 }}
+    >
+      <motion.div
+        className="settings-modal"
+        onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0, scale: 0.9, y: -20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 350, damping: 25, mass: 0.8 }}
+      >
         <div className="settings-modal__header">
           <div className="settings-modal__title">
             <Settings size={16} />
@@ -233,8 +246,8 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             Reset to defaults
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import {
   Plus, Settings, Bell, Sidebar,
   X as XIcon, Layout,
@@ -319,8 +320,20 @@ export function CommandPalette({ visible, onClose, onOpenSettings }: CommandPale
   let flatIndex = 0;
 
   return (
-    <div className="command-palette-overlay" onClick={onClose}>
-      <div className="command-palette" onClick={(e) => e.stopPropagation()}>
+    <motion.div
+      className="command-palette-overlay"
+      onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15 }}
+    >
+      <motion.div
+        className="command-palette"
+        onClick={(e) => e.stopPropagation()}
+        initial={{ opacity: 0, scale: 0.9, y: -20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 25, mass: 0.8 }}
+      >
         <div className="command-palette__input-wrapper">
           <Search size={14} />
           <input
@@ -363,7 +376,7 @@ export function CommandPalette({ visible, onClose, onOpenSettings }: CommandPale
             ))
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
