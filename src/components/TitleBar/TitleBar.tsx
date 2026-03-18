@@ -1,5 +1,5 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { Minus, Square, X, Maximize2 } from 'lucide-react';
+import { Minus, X, Maximize2 } from 'lucide-react';
 import './TitleBar.css';
 
 interface TitleBarProps {

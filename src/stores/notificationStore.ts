@@ -20,7 +20,7 @@ function generateNotificationId(): string {
   return `notif-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export const useNotificationStore = create<NotificationStore>((set, get) => ({
+export const useNotificationStore = create<NotificationStore>((set, _get) => ({
   notifications: [],
   unreadCount: 0,
   panelVisible: false,

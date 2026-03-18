@@ -1,7 +1,6 @@
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSessionStore } from '../../stores/sessionStore';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { getStatusColor, getStatusLabel } from '../../utils/statusDetector';
 import { SessionItem } from './SessionItem';
 import './Sidebar.css';
 

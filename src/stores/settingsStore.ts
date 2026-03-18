@@ -73,7 +73,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
       settings: {
         ...state.settings,
         [key]: {
-          ...(state.settings[key] as Record<string, unknown>),
+          ...(state.settings[key] as unknown as Record<string, unknown>),
           [nestedKey]: value,
         },
       },
