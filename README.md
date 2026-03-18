@@ -237,6 +237,24 @@ Molten runs a local API server on `http://127.0.0.1:9900` for the tmux shim and 
 
 ---
 
+## Platform Support
+
+| Feature | Windows | macOS | Linux |
+|---------|---------|-------|-------|
+| Terminal / PTY | ✅ | ✅ | ✅ |
+| UI / Split / Docking | ✅ | ✅ | ✅ |
+| Default shell | Git Bash | zsh | bash |
+| Screenshot capture | ✅ (Win32 API) | ❌ Not yet | ❌ Not yet |
+| tmux shim | ✅ | ⚠️ May conflict with real tmux | ⚠️ May conflict with real tmux |
+
+### Known Limitations
+
+- **Screenshot capture** (`captureSelf`) currently uses the Win32 `PrintWindow` API and only works on Windows. macOS/Linux support requires platform-specific capture implementations (contributions welcome).
+- **tmux shim** is designed for environments where real tmux is not available (i.e., Windows). On macOS/Linux where tmux is already installed, the shim may conflict with the real tmux binary. Do **not** overwrite your system tmux — use a separate PATH entry or rename the shim if needed.
+- **Default shell**: On Windows, Molten prefers Git Bash. On macOS it uses `$SHELL` (typically zsh), on Linux it uses `$SHELL` (typically bash). You can override this in Settings.
+
+---
+
 ## Contributing
 
 Contributions welcome! Fork, branch, commit, PR.
