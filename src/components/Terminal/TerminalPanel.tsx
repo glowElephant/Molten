@@ -264,7 +264,7 @@ export function TerminalPanel({ sessionId }: TerminalPanelProps) {
 
   const handleImeSend = () => {
     if (!imeText) return;
-    invoke('pty_write', { sessionId, data: imeText + '\n' }).catch(console.error);
+    invoke('pty_write', { sessionId, data: imeText + '\r' }).catch(console.error);
     setImeText('');
     imeInputRef.current?.focus();
   };
